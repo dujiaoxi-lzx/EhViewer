@@ -780,4 +780,7 @@
 
     <string name="download_service">Download Service</string>
     <string name="favorite_name">Favorite</string>
+    <string name="delete_local_files_only">仅删除本地文件</string>
+    <string name="delete_download_tasks_only">仅删除下载任务</string>
+    <string name="delete_tasks_and_files">删除任务及文件</string>
 </resources>

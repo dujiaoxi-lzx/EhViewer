@@ -196,14 +196,14 @@ public class Settings {
     }
 
     private static final String KEY_REMOVE_IMAGE_FILES = "include_pic";
-    private static final boolean DEFAULT_REMOVE_IMAGE_FILES = true;
+    private static final int DEFAULT_REMOVE_IMAGE_FILES = R.id.radioButton3;
 
-    public static boolean getRemoveImageFiles() {
-        return getBoolean(KEY_REMOVE_IMAGE_FILES, DEFAULT_REMOVE_IMAGE_FILES);
+    public static int getRemoveImageFiles() {
+        return getInt(KEY_REMOVE_IMAGE_FILES, DEFAULT_REMOVE_IMAGE_FILES);
     }
 
-    public static void putRemoveImageFiles(boolean value) {
-        putBoolean(KEY_REMOVE_IMAGE_FILES, value);
+    public static void putRemoveImageFiles(int value) {
+        putInt(KEY_REMOVE_IMAGE_FILES, value);
     }
 
     public static EhConfig getEhConfig() {

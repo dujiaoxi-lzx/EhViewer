@@ -58,6 +58,7 @@ import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.app.CheckBoxDialogBuilder;
+import com.hippo.app.RadioGroupDialogBuilder;
 import com.hippo.conaco.DataContainer;
 import com.hippo.conaco.ProgressNotifier;
 import com.hippo.drawerlayout.DrawerLayout;
@@ -690,83 +691,82 @@ public class DownloadsScene extends ToolbarScene
 
         if (0 == position) {
             recyclerView.checkAll();
-        } else {
-            List<DownloadInfo> list = mList;
-            if (list == null) {
-                return;
-            }
+            return;
+        }
+        List<DownloadInfo> list = mList;
+        if (list == null) {
+            return;
+        }
 
-            LongList gidList = null;
-            List<DownloadInfo> downloadInfoList = null;
-            boolean collectGid = position == 1 || position == 2 || position == 3; // Start, Stop, Delete
-            boolean collectDownloadInfo = position == 3 || position == 4; // Delete or Move
-            if (collectGid) {
-                gidList = new LongList();
-            }
-            if (collectDownloadInfo) {
-                downloadInfoList = new LinkedList<>();
-            }
+        LongList gidList = null;
+        List<DownloadInfo> downloadInfoList = null;
+        boolean collectGid = position == 1 || position == 2 || position == 3; // Start, Stop, Delete
+        boolean collectDownloadInfo = position == 3 || position == 4; // Delete or Move
+        if (collectGid) {
+            gidList = new LongList();
+        }
+        if (collectDownloadInfo) {
+            downloadInfoList = new LinkedList<>();
+        }
 
-            SparseBooleanArray stateArray = recyclerView.getCheckedItemPositions();
-            for (int i = 0, n = stateArray.size(); i < n; i++) {
-                if (stateArray.valueAt(i)) {
-                    DownloadInfo info = list.get(stateArray.keyAt(i));
-                    if (collectDownloadInfo) {
-                        downloadInfoList.add(info);
-                    }
-                    if (collectGid) {
-                        gidList.add(info.gid);
-                    }
+        SparseBooleanArray stateArray = recyclerView.getCheckedItemPositions();
+        for (int i = 0, n = stateArray.size(); i < n; i++) {
+            if (stateArray.valueAt(i)) {
+                DownloadInfo info = list.get(stateArray.keyAt(i));
+                if (collectDownloadInfo) {
+                    downloadInfoList.add(info);
+                }
+                if (collectGid) {
+                    gidList.add(info.gid);
                 }
             }
+        }
 
-            switch (position) {
-                case 1: { // Start
-                    Intent intent = new Intent(activity, DownloadService.class);
-                    intent.setAction(DownloadService.ACTION_START_RANGE);
-                    intent.putExtra(DownloadService.KEY_GID_LIST, gidList);
-                    activity.startService(intent);
-                    // Cancel check mode
-                    recyclerView.outOfCustomChoiceMode();
-                    break;
+        switch (position) {
+            case 1: { // Start
+                Intent intent = new Intent(activity, DownloadService.class);
+                intent.setAction(DownloadService.ACTION_START_RANGE);
+                intent.putExtra(DownloadService.KEY_GID_LIST, gidList);
+                activity.startService(intent);
+                // Cancel check mode
+                recyclerView.outOfCustomChoiceMode();
+                break;
+            }
+            case 2: { // Stop
+                if (null != mDownloadManager) {
+                    mDownloadManager.stopRangeDownload(gidList);
                 }
-                case 2: { // Stop
-                    if (null != mDownloadManager) {
-                        mDownloadManager.stopRangeDownload(gidList);
-                    }
-                    // Cancel check mode
-                    recyclerView.outOfCustomChoiceMode();
-                    break;
+                // Cancel check mode
+                recyclerView.outOfCustomChoiceMode();
+                break;
+            }
+            case 3: { // Delete
+                RadioGroupDialogBuilder builder = new RadioGroupDialogBuilder(context,
+                        getString(R.string.download_remove_dialog_message_2, gidList.size()),
+                        Settings.getRemoveImageFiles());
+                DeleteRangeDialogHelper helper = new DeleteRangeDialogHelper(
+                        downloadInfoList, gidList, builder);
+                builder.setTitle(R.string.download_remove_dialog_title)
+                        .setPositiveButton(android.R.string.ok, helper)
+                        .show();
+                break;
+            }
+            case 4: {// Move
+                List<DownloadLabel> labelRawList = EhApplication.getDownloadManager(context).getLabelList();
+                List<String> labelList = new ArrayList<>(labelRawList.size() + 1);
+                labelList.add(getString(R.string.default_download_label_name));
+                for (int i = 0, n = labelRawList.size(); i < n; i++) {
+                    labelList.add(labelRawList.get(i).getLabel());
                 }
-                case 3: { // Delete
-                    CheckBoxDialogBuilder builder = new CheckBoxDialogBuilder(context,
-                            getString(R.string.download_remove_dialog_message_2, gidList.size()),
-                            getString(R.string.download_remove_dialog_check_text),
-                            Settings.getRemoveImageFiles());
-                    DeleteRangeDialogHelper helper = new DeleteRangeDialogHelper(
-                            downloadInfoList, gidList, builder);
-                    builder.setTitle(R.string.download_remove_dialog_title)
-                            .setPositiveButton(android.R.string.ok, helper)
-                            .show();
-                    break;
-                }
-                case 4: {// Move
-                    List<DownloadLabel> labelRawList = EhApplication.getDownloadManager(context).getLabelList();
-                    List<String> labelList = new ArrayList<>(labelRawList.size() + 1);
-                    labelList.add(getString(R.string.default_download_label_name));
-                    for (int i = 0, n = labelRawList.size(); i < n; i++) {
-                        labelList.add(labelRawList.get(i).getLabel());
-                    }
-                    String[] labels = labelList.toArray(new String[labelList.size()]);
+                String[] labels = labelList.toArray(new String[0]);
 
-                    MoveDialogHelper helper = new MoveDialogHelper(labels, downloadInfoList);
+                MoveDialogHelper helper = new MoveDialogHelper(labels, downloadInfoList);
 
-                    new AlertDialog.Builder(context)
-                            .setTitle(R.string.download_move_dialog_title)
-                            .setItems(labels, helper)
-                            .show();
-                    break;
-                }
+                new AlertDialog.Builder(context)
+                        .setTitle(R.string.download_move_dialog_title)
+                        .setItems(labels, helper)
+                        .show();
+                break;
             }
         }
     }
@@ -944,10 +944,10 @@ public class DownloadsScene extends ToolbarScene
 
         private final List<DownloadInfo> mDownloadInfoList;
         private final LongList mGidList;
-        private final CheckBoxDialogBuilder mBuilder;
+        private final RadioGroupDialogBuilder mBuilder;
 
         public DeleteRangeDialogHelper(List<DownloadInfo> downloadInfoList,
-                LongList gidList, CheckBoxDialogBuilder builder) {
+                                       LongList gidList, RadioGroupDialogBuilder builder) {
             mDownloadInfoList = downloadInfoList;
             mGidList = gidList;
             mBuilder = builder;
@@ -964,18 +964,47 @@ public class DownloadsScene extends ToolbarScene
                 mRecyclerView.outOfCustomChoiceMode();
             }
 
-            // Delete
-            if (null != mDownloadManager) {
-                mDownloadManager.deleteRangeDownload(mGidList);
-            }
-
             // Delete image files
-            boolean checked = mBuilder.isChecked();
+            int checked = mBuilder.getChecked();
             Settings.putRemoveImageFiles(checked);
-            if (checked) {
+
+            if (checked == R.id.radioButton1) {
+                // delete_download_tasks_only
+                if (null != mDownloadManager) {
+                    mDownloadManager.deleteRangeDownload(mGidList);
+                }
+            } else if (checked == R.id.radioButton2) {
+                // delete_local_files_only
+                if (null != mDownloadManager) {
+                    mDownloadManager.stopRangeDownload(mGidList);
+                    for (int i = 0; i < mGidList.size(); i++) {
+                        long gid = mGidList.get(i);
+                        DownloadInfo info = mDownloadManager.getDownloadInfo(gid);
+                        // Update state
+                        info.state = DownloadInfo.STATE_NONE;
+                        // Update in DB
+                        EhDB.putDownloadInfo(info);
+                    }
+                }
                 UniFile[] files = new UniFile[mDownloadInfoList.size()];
                 int i = 0;
-                for (DownloadInfo info: mDownloadInfoList) {
+                for (DownloadInfo info : mDownloadInfoList) {
+                    // Remove download path
+                    EhDB.removeDownloadDirname(info.gid);
+                    // Put file
+                    files[i] = SpiderDen.getGalleryDownloadDir(info);
+                    i++;
+                }
+                // Delete file
+                deleteFileAsync(files);
+            } else if (checked == R.id.radioButton3) {
+                // delete_tasks_and_files
+                if (null != mDownloadManager) {
+                    mDownloadManager.deleteRangeDownload(mGidList);
+                }
+                UniFile[] files = new UniFile[mDownloadInfoList.size()];
+                int i = 0;
+                for (DownloadInfo info : mDownloadInfoList) {
                     // Remove download path
                     EhDB.removeDownloadDirname(info.gid);
                     // Put file
