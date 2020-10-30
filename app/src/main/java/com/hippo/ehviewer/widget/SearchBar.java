@@ -43,13 +43,16 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import com.hippo.ehviewer.R;
+import com.hippo.ehviewer.client.EhTagDatabase;
 import com.hippo.view.ViewTransition;
 import com.hippo.yorozuya.AnimationUtils;
 import com.hippo.yorozuya.MathUtils;
 import com.hippo.yorozuya.SimpleAnimatorListener;
 import com.hippo.yorozuya.ViewUtils;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class SearchBar extends CardView implements View.OnClickListener,
         TextView.OnEditorActionListener, TextWatcher,
@@ -174,6 +177,16 @@ public class SearchBar extends CardView implements View.OnClickListener,
             List<Suggestion> suggestions = mSuggestionProvider.providerSuggestions(text);
             if (suggestions != null && !suggestions.isEmpty()) {
                 mSuggestionList.addAll(suggestions);
+            }
+        }
+
+        EhTagDatabase instance = EhTagDatabase.getInstance(getContext());
+        if (instance != null && text != null && text.length() > 0 && !text.endsWith(" ")) {
+            String[] s = text.split(" ");
+            if (s != null && s.length > 0) {
+                String keyword = s[s.length - 1];
+                Map<String, Map<String, String>> chineseTagSuggestion = instance.suggestion(keyword);
+                mSuggestionList.addAll(transform(chineseTagSuggestion, 128));
             }
         }
 
@@ -583,6 +596,58 @@ public class SearchBar extends CardView implements View.OnClickListener,
         public void onLongClick() {
             mSearchDatabase.deleteQuery(mKeyword);
             updateSuggestions(false);
+        }
+    }
+
+    private List<ChineseTagSuggestion> transform(Map<String, Map<String, String>> tagSuggestion, int limit) {
+        List<ChineseTagSuggestion> result = new LinkedList<>();
+        if (tagSuggestion == null || tagSuggestion.isEmpty()) {
+            return result;
+        }
+        for (Map.Entry<String, Map<String, String>> e : tagSuggestion.entrySet()) {
+            String namespace = e.getKey();
+            Map<String, String> m = e.getValue();
+            for (Map.Entry<String, String> t : m.entrySet()) {
+                result.add(new ChineseTagSuggestion(namespace, t.getKey(), t.getValue()));
+                if (result.size() == limit) {
+                    return result;
+                }
+            }
+        }
+        return result;
+    }
+
+    public class ChineseTagSuggestion extends Suggestion {
+
+        private final String namespace;
+        private final String code;
+        private final String name;
+
+        private ChineseTagSuggestion(String namespace, String code, String name) {
+            this.namespace = namespace;
+            this.code = code;
+            this.name = name;
+        }
+
+        @Override
+        public CharSequence getText(float textSize) {
+            return String.format("%s:%s [%s]", namespace, code, name);
+        }
+
+        @Override
+        public void onClick() {
+            String text = mEditText.getText().toString();
+            String temp = namespace + ":" + (code.contains(" ") ? ("\"" + code + "$\"") : code) + " ";
+            if (text.contains(" ")) {
+                temp = text.substring(0, text.lastIndexOf(" ")) + " " + temp;
+            }
+            mEditText.setText(temp);
+
+            mEditText.setSelection(mEditText.getText().length());
+        }
+
+        @Override
+        public void onLongClick() {
         }
     }
 }

@@ -75,6 +75,30 @@ public class EhTagDatabase {
         this.tags = tags;
     }
 
+    public Map<String, Map<String, String>> suggestion(String keyword) {
+        Map<String, Map<String, String>> tags = new HashMap<>();
+        if (this.tags == null || this.tags.isEmpty() || keyword == null || (keyword = keyword.trim()).length() == 0) {
+            return tags;
+        }
+        for (Map.Entry<String, Map<String, String>> e : this.tags.entrySet()) {
+            String namespace = e.getKey();
+            Map<String, String> m = e.getValue();
+            boolean flag = false;
+            for (Map.Entry<String, String> t : m.entrySet()) {
+                String code = t.getKey();
+                String name = t.getValue();
+                if ((code != null && code.contains(keyword)) || (name != null && name.contains(keyword))) {
+                    if (!flag) {
+                        flag = true;
+                        tags.put(namespace, new HashMap<>());
+                    }
+                    tags.get(namespace).put(code, name);
+                }
+            }
+        }
+        return tags;
+    }
+
     public String getTranslation(String namespace, String tag) {
         try {
             Map<String, String> jsonObject = tags.get(namespace);
