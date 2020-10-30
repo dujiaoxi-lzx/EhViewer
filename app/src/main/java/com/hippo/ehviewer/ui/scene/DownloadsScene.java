@@ -940,40 +940,6 @@ public class DownloadsScene extends ToolbarScene
         }.executeOnExecutor(IoThreadPoolExecutor.getInstance(), files);
     }
 
-    private class DeleteDialogHelper implements DialogInterface.OnClickListener {
-
-        private final GalleryInfo mGalleryInfo;
-        private final CheckBoxDialogBuilder mBuilder;
-
-        public DeleteDialogHelper(GalleryInfo galleryInfo, CheckBoxDialogBuilder builder) {
-            mGalleryInfo = galleryInfo;
-            mBuilder = builder;
-        }
-
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-            if (which != DialogInterface.BUTTON_POSITIVE) {
-                return;
-            }
-
-            // Delete
-            if (null != mDownloadManager) {
-                mDownloadManager.deleteDownload(mGalleryInfo.gid);
-            }
-
-            // Delete image files
-            boolean checked = mBuilder.isChecked();
-            Settings.putRemoveImageFiles(checked);
-            if (checked) {
-                // Remove download path
-                EhDB.removeDownloadDirname(mGalleryInfo.gid);
-                // Delete file
-                UniFile file = SpiderDen.getGalleryDownloadDir(mGalleryInfo);
-                deleteFileAsync(file);
-            }
-        }
-    }
-
     private class DeleteRangeDialogHelper implements DialogInterface.OnClickListener {
 
         private final List<DownloadInfo> mDownloadInfoList;
