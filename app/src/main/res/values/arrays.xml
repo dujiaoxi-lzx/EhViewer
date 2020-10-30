@@ -272,7 +272,10 @@
     </string-array>
 
     <string-array name="tag_translation_metadata" tools:ignore="InconsistentArrays">
-        <item>@null</item>
+        <item>db.text.json</item>
+        <!-- 参考 -->
+        <!-- https://github.com/EhTagTranslation/Database/wiki/%E5%BC%80%E5%8F%91%E6%8C%87%E5%8D%97 -->
+        <item>https://github.com/EhTagTranslation/Database/releases/latest/download/db.text.json</item>
     </string-array>
 
     <string-array name="proxy_types">

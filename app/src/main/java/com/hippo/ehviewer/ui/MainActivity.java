@@ -364,7 +364,9 @@ public final class MainActivity extends StageActivity
             onRestore(savedInstanceState);
         }
 
-        EhTagDatabase.update(this);
+        if (Settings.getShowTagTranslations()) {
+            EhTagDatabase.load(this);
+        }
     }
 
     private String getThemeText() {
