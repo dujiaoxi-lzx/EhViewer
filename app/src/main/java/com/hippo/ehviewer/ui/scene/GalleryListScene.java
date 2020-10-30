@@ -77,6 +77,7 @@ import com.hippo.ehviewer.client.parser.GalleryDetailUrlParser;
 import com.hippo.ehviewer.client.parser.GalleryListParser;
 import com.hippo.ehviewer.client.parser.GalleryPageUrlParser;
 import com.hippo.ehviewer.dao.DownloadInfo;
+import com.hippo.ehviewer.dao.DownloadLabel;
 import com.hippo.ehviewer.dao.QuickSearch;
 import com.hippo.ehviewer.download.DownloadManager;
 import com.hippo.ehviewer.ui.CommonOperations;
@@ -105,6 +106,7 @@ import com.hippo.yorozuya.ViewUtils;
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -1065,16 +1067,26 @@ public final class GalleryListScene extends BaseScene
         boolean downloaded = mDownloadManager.getDownloadState(gi.gid) != DownloadInfo.STATE_INVALID;
         boolean favourited = gi.favoriteSlot != -2;
 
-        CharSequence[] items = new CharSequence[] {
-            context.getString(R.string.read),
-            context.getString(downloaded ? R.string.delete_downloads : R.string.download),
-            context.getString(favourited ? R.string.remove_from_favourites : R.string.add_to_favourites),
+        CharSequence[] items = downloaded ? new CharSequence[]{
+                context.getString(R.string.read),
+                context.getString(R.string.delete_downloads),
+                context.getString(favourited ? R.string.remove_from_favourites : R.string.add_to_favourites),
+                context.getString(R.string.download_move_dialog_title),
+        } : new CharSequence[]{
+                context.getString(R.string.read),
+                context.getString(R.string.download),
+                context.getString(favourited ? R.string.remove_from_favourites : R.string.add_to_favourites),
         };
 
-        int[] icons = new int[] {
-            R.drawable.v_book_open_x24,
-            downloaded ? R.drawable.v_delete_x24 : R.drawable.v_download_x24,
-            favourited ? R.drawable.v_heart_broken_x24 : R.drawable.v_heart_x24,
+        int[] icons = downloaded ? new int[]{
+                R.drawable.v_book_open_x24,
+                R.drawable.v_delete_x24,
+                favourited ? R.drawable.v_heart_broken_x24 : R.drawable.v_heart_x24,
+                R.drawable.v_folder_move_x24
+        } : new int[]{
+                R.drawable.v_book_open_x24,
+                R.drawable.v_download_x24,
+                favourited ? R.drawable.v_heart_broken_x24 : R.drawable.v_heart_x24,
         };
 
         new AlertDialog.Builder(context)
@@ -1090,10 +1102,10 @@ public final class GalleryListScene extends BaseScene
                         case 1: // Download
                             if (downloaded) {
                                 new AlertDialog.Builder(context)
-                                    .setTitle(R.string.download_remove_dialog_title)
-                                    .setMessage(getString(R.string.download_remove_dialog_message, gi.title))
-                                    .setPositiveButton(android.R.string.ok, (dialog1, which1) -> mDownloadManager.deleteDownload(gi.gid))
-                                    .show();
+                                        .setTitle(R.string.download_remove_dialog_title)
+                                        .setMessage(getString(R.string.download_remove_dialog_message, gi.title))
+                                        .setPositiveButton(android.R.string.ok, (dialog1, which1) -> mDownloadManager.deleteDownload(gi.gid))
+                                        .show();
                             } else {
                                 CommonOperations.startDownload(activity, gi, false);
                             }
@@ -1105,9 +1117,58 @@ public final class GalleryListScene extends BaseScene
                                 CommonOperations.addToFavorites(activity, gi, new AddToFavoriteListener(context, activity.getStageId(), getTag()));
                             }
                             break;
+                        case 3: // Move
+                            List<DownloadLabel> labelRawList = EhApplication.getDownloadManager(context).getLabelList();
+                            List<String> labelList = new ArrayList<>(labelRawList.size() + 1);
+                            labelList.add(getString(R.string.default_download_label_name));
+                            for (int i = 0, n = labelRawList.size(); i < n; i++) {
+                                labelList.add(labelRawList.get(i).getLabel());
+                            }
+                            String[] labels = labelList.toArray(new String[0]);
+
+                            GalleryListScene.MoveDialogHelper helper = new GalleryListScene.MoveDialogHelper(labels, gi);
+
+                            new AlertDialog.Builder(context)
+                                    .setTitle(R.string.download_move_dialog_title)
+                                    .setItems(labels, helper)
+                                    .show();
+                            break;
                     }
                 }).show();
         return true;
+    }
+
+    private class MoveDialogHelper implements DialogInterface.OnClickListener {
+
+        private final String[] mLabels;
+        private final GalleryInfo mGi;
+
+        public MoveDialogHelper(String[] labels, GalleryInfo gi) {
+            mLabels = labels;
+            mGi = gi;
+        }
+
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+            // Cancel check mode
+            Context context = getContext2();
+            if (null == context) {
+                return;
+            }
+            if (null != mRecyclerView) {
+                mRecyclerView.outOfCustomChoiceMode();
+            }
+
+            DownloadManager downloadManager = EhApplication.getDownloadManager(context);
+            DownloadInfo downloadInfo = downloadManager.getDownloadInfo(mGi.gid);
+            if (downloadInfo == null) {
+                return;
+            }
+
+            String label = which == 0 ? null : mLabels[which];
+
+            downloadManager.changeLabel(Collections.singletonList(downloadInfo), label);
+        }
     }
 
     private void showActionFab() {
