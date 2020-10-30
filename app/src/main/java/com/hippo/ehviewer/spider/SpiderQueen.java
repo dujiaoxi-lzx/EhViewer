@@ -1070,7 +1070,7 @@ public final class SpiderQueen implements Runnable {
             boolean interrupt = false;
             boolean leakSkipHathKey = false;
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 3; i++) {
                 String imageUrl = null;
                 String localShowKey;
 
@@ -1181,8 +1181,6 @@ public final class SpiderQueen implements Runnable {
 
                     Call call = mHttpClient.newCall(new EhRequestBuilder(targetImageUrl, referer).build());
                     Response response = call.execute();
-                    ResponseBody responseBody = response.body();
-
                     if (response.code() >= 400) {
                         // Maybe 404
                         response.close();
@@ -1191,6 +1189,7 @@ public final class SpiderQueen implements Runnable {
                         continue;
                     }
 
+                    ResponseBody responseBody = response.body();
                     if (responseBody == null) {
                         error = "Empty response body";
                         forceHtml = true;
@@ -1224,7 +1223,7 @@ public final class SpiderQueen implements Runnable {
                         osPipe.obtain();
                         OutputStream os = osPipe.open();
 
-                        final byte[] data = new byte[1024 * 4];
+                        final byte[] data = new byte[1024 * 32];
                         long receivedSize = 0;
 
                         while (!Thread.currentThread().isInterrupted()) {
