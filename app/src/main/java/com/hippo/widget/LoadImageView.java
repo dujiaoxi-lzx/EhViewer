@@ -72,7 +72,8 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     private int mRetryType;
 
-    private boolean mFailed;
+    private boolean mFailed = false;
+    private boolean mLoading = false;
 
     public LoadImageView(Context context) {
         super(context);
@@ -175,20 +176,18 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
             int oldRetryType = mRetryType;
             mRetryType = retryType;
 
-            if (mFailed) {
-                if (oldRetryType == RETRY_TYPE_CLICK) {
-                    setOnClickListener(null);
-                    setClickable(false);
-                } else if (oldRetryType == RETRY_TYPE_LONG_CLICK) {
-                    setOnLongClickListener(null);
-                    setLongClickable(false);
-                }
+            if (oldRetryType == RETRY_TYPE_CLICK) {
+                setOnClickListener(null);
+                setClickable(false);
+            } else if (oldRetryType == RETRY_TYPE_LONG_CLICK) {
+                setOnLongClickListener(null);
+                setLongClickable(false);
+            }
 
-                if (retryType == RETRY_TYPE_CLICK) {
-                    setOnClickListener(this);
-                } else if (retryType == RETRY_TYPE_LONG_CLICK) {
-                    setOnLongClickListener(this);
-                }
+            if (retryType == RETRY_TYPE_CLICK) {
+                setOnClickListener(this);
+            } else if (retryType == RETRY_TYPE_LONG_CLICK) {
+                setOnLongClickListener(this);
             }
         }
     }
@@ -220,8 +219,9 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
             return;
         }
 
+        mLoading = true;
         mFailed = false;
-        clearRetry();
+        // clearRetry();
 
         mKey = key;
         mUrl = url;
@@ -234,6 +234,30 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
                 .setUrl(url)
                 .setDataContainer(container)
                 .setUseNetwork(useNetwork);
+        mConaco.load(builder);
+    }
+
+    public void loadEnforce(String key, String url, DataContainer container) {
+        if (url == null || (key == null && container == null)) {
+            return;
+        }
+
+        mLoading = true;
+        mFailed = false;
+        // clearRetry();
+
+        mKey = key;
+        mUrl = url;
+        mContainer = container;
+
+        ConacoTask.Builder<ImageBitmap> builder = new ConacoTask.Builder<ImageBitmap>()
+                .setUnikery(this)
+                .setKey(key)
+                .setUrl(url)
+                .setDataContainer(container)
+                .setUseMemoryCache(false)
+                .setUseDiskCache(false)
+                .setUseNetwork(true);
         mConaco.load(builder);
     }
 
@@ -259,6 +283,8 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     @Override
     public void onMiss(int source) {
+        mLoading = false;
+        mFailed = false;
         if (source == Conaco.SOURCE_MEMORY) {
             clearDrawable();
         }
@@ -277,6 +303,8 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     @Override
     public boolean onGetValue(@NonNull ImageBitmap value, int source) {
+        mLoading = false;
+        mFailed = false;
         Drawable drawable;
         try {
             drawable = new ImageDrawable(value);
@@ -309,6 +337,7 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     @Override
     public void onFailure() {
+        mLoading = false;
         mFailed = true;
         clearDrawable();
         Drawable drawable = DrawableManager.getVectorDrawable(getContext(), R.drawable.image_failed);
@@ -328,6 +357,7 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     @Override
     public void onCancel() {
+        mLoading = false;
         mFailed = false;
     }
 
@@ -357,14 +387,24 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         }
     }
 
+    private void reloadThumb() {
+        if (!mLoading) {
+            clearDrawable();
+            if (mContainer != null) {
+                mContainer.remove();
+            }
+            loadEnforce(mKey, mUrl, mContainer);
+        }
+    }
+
     @Override
     public void onClick(@NonNull View v) {
-        load(mKey, mUrl, mContainer, true);
+        reloadThumb();
     }
 
     @Override
     public boolean onLongClick(@NonNull View v) {
-        load(mKey, mUrl, mContainer, true);
+        reloadThumb();
         return true;
     }
 
