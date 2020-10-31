@@ -120,7 +120,37 @@ public class EhDB {
                     "SELECT _id, NAME, MODE, CATEGORY, KEYWORD, ADVANCE_SEARCH, MIN_RATING, -1, -1, TIME FROM QUICK_SEARCH;");
                 db.execSQL("DROP TABLE QUICK_SEARCH");
                 db.execSQL("ALTER TABLE QUICK_SEARCH2 RENAME TO QUICK_SEARCH");
+            case 4: // 4 to 5, 实现下载任务的拖拽，对position进行初始化
+                db.execSQL("ALTER TABLE DOWNLOADS ADD \"POSITION\" INTEGER DEFAULT 0 NOT NULL;");
+                DaoMaster daoMaster = new DaoMaster(db);
+                DaoSession session = daoMaster.newSession();
+                DownloadsDao downloadsDao = session.getDownloadsDao();
+                List<DownloadInfo> downloadInfos = downloadsDao.loadAll();
+                Map<String, List<DownloadInfo>> groupByLabel = groupByLabel(downloadInfos);
+                for (Map.Entry<String, List<DownloadInfo>> entry : groupByLabel.entrySet()) {
+                    int position = 0;
+                    for (DownloadInfo downloadInfo : entry.getValue()) {
+                        downloadInfo.position = position++;
+                    }
+                }
+                downloadsDao.updateInTx(downloadInfos);
         }
+    }
+
+    public static Map<String, List<DownloadInfo>> groupByLabel(List<DownloadInfo> downloadInfos) {
+        Map<String, List<DownloadInfo>> result = new HashMap<>();
+        for (DownloadInfo downloadInfo : downloadInfos) {
+            List<DownloadInfo> list = result.get(downloadInfo.label);
+            if (list == null) {
+                list = new LinkedList<>();
+                result.put(downloadInfo.label, list);
+            }
+            list.add(downloadInfo);
+        }
+        for (Map.Entry<String, List<DownloadInfo>> entry : result.entrySet()) {
+            Collections.sort(entry.getValue(), (l, r) -> Long.compare(l.time, r.time));
+        }
+        return result;
     }
 
     private static class OldDBHelper extends SQLiteOpenHelper {

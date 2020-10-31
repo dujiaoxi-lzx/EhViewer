@@ -32,7 +32,7 @@ public class EhDaoGenerator {
     private static final String OUT_DIR = "../app/src/main/java-gen";
     private static final String DELETE_DIR = "../app/src/main/java-gen/com/hippo/ehviewer/dao";
 
-    private static final int VERSION = 4;
+    private static final int VERSION = 5;
 
     private static final String DOWNLOAD_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/DownloadInfo.java";
     private static final String HISTORY_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/HistoryInfo.java";
@@ -85,6 +85,7 @@ public class EhDaoGenerator {
         // DownloadInfo data
         entity.addIntProperty("state").notNull();
         entity.addIntProperty("legacy").notNull();
+        entity.addIntProperty("position").notNull();
         entity.addLongProperty("time").notNull();
         entity.addStringProperty("label");
     }
@@ -214,6 +215,7 @@ public class EhDaoGenerator {
         // Set all field public
         javaClass.getField("state").setPublic();
         javaClass.getField("legacy").setPublic();
+        javaClass.getField("position").setPublic();
         javaClass.getField("time").setPublic();
         javaClass.getField("label").setPublic();
         // Add Parcelable stuff
@@ -226,6 +228,7 @@ public class EhDaoGenerator {
                 "\t\tsuper.writeToParcel(dest, flags);\n" +
                 "\t\tdest.writeInt(this.state);\n" +
                 "\t\tdest.writeInt(this.legacy);\n" +
+                "\t\tdest.writeInt(this.position);\n" +
                 "\t\tdest.writeLong(this.time);\n" +
                 "\t\tdest.writeString(this.label);\n" +
                 "\t}");
@@ -233,6 +236,7 @@ public class EhDaoGenerator {
                 "\t\tsuper(in);\n" +
                 "\t\tthis.state = in.readInt();\n" +
                 "\t\tthis.legacy = in.readInt();\n" +
+                "\t\tthis.position = in.readInt();\n" +
                 "\t\tthis.time = in.readLong();\n" +
                 "\t\tthis.label = in.readString();\n" +
                 "\t}").setConstructor(true);
