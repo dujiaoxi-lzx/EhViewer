@@ -20,8 +20,10 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.hippo.ehviewer.EhDB;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.dao.DownloadInfo;
@@ -39,8 +41,10 @@ import com.hippo.yorozuya.SimpleHandler;
 import com.hippo.yorozuya.collect.LongList;
 import com.hippo.yorozuya.collect.SparseIJArray;
 import com.hippo.yorozuya.collect.SparseJLArray;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -145,7 +149,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             return false;
         }
 
-        for (DownloadLabel raw: mLabelList) {
+        for (DownloadLabel raw : mLabelList) {
             if (label.equals(raw.getLabel())) {
                 return true;
             }
@@ -230,7 +234,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             // Notify state update
             List<DownloadInfo> list = getInfoListForLabel(info.label);
             if (list != null) {
-                for (DownloadInfoListener l: mDownloadInfoListeners) {
+                for (DownloadInfoListener l : mDownloadInfoListeners) {
                     l.onUpdate(info, list);
                 }
             }
@@ -256,7 +260,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                 // Notify state update
                 List<DownloadInfo> list = getInfoListForLabel(info.label);
                 if (list != null) {
-                    for (DownloadInfoListener l: mDownloadInfoListeners) {
+                    for (DownloadInfoListener l : mDownloadInfoListeners) {
                         l.onUpdate(info, list);
                     }
                 }
@@ -269,6 +273,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             info.label = label;
             info.state = DownloadInfo.STATE_WAIT;
             info.time = System.currentTimeMillis();
+            info.position = maxPosition(label == null ? getDefaultDownloadInfoList() : getLabelDownloadInfoList(label)) + 1;
 
             // Add to label download list
             LinkedList<DownloadInfo> list = getInfoListForLabel(info.label);
@@ -289,7 +294,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             EhDB.putDownloadInfo(info);
 
             // Notify
-            for (DownloadInfoListener l: mDownloadInfoListeners) {
+            for (DownloadInfoListener l : mDownloadInfoListeners) {
                 l.onAdd(info, list, list.size() - 1);
             }
             // Make sure download is running
@@ -326,7 +331,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
 
         if (update) {
             // Notify Listener
-            for (DownloadInfoListener l: mDownloadInfoListeners) {
+            for (DownloadInfoListener l : mDownloadInfoListeners) {
                 l.onUpdateAll();
             }
             // Ensure download
@@ -339,7 +344,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         // Start all STATE_NONE and STATE_FAILED item
         LinkedList<DownloadInfo> allInfoList = mAllInfoList;
         LinkedList<DownloadInfo> waitList = mWaitList;
-        for (DownloadInfo info: allInfoList) {
+        for (DownloadInfo info : allInfoList) {
             if (info.state == DownloadInfo.STATE_NONE || info.state == DownloadInfo.STATE_FAILED) {
                 update = true;
                 // Set state DownloadInfo.STATE_WAIT
@@ -353,7 +358,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
 
         if (update) {
             // Notify Listener
-            for (DownloadInfoListener l: mDownloadInfoListeners) {
+            for (DownloadInfoListener l : mDownloadInfoListeners) {
                 l.onUpdateAll();
             }
             // Ensure download
@@ -361,53 +366,67 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
     }
 
-    public void addDownload(List<DownloadInfo> downloadInfoList) {
-        for (DownloadInfo info: downloadInfoList) {
-            if (containDownloadInfo(info.gid)) {
-                // Contain
-                return;
-            }
+    public void mergeDownload(Map<String, List<DownloadInfo>> groupByLabel) {
 
-            // Ensure download state
-            if (DownloadInfo.STATE_WAIT == info.state ||
-                    DownloadInfo.STATE_DOWNLOAD == info.state) {
-                info.state = DownloadInfo.STATE_NONE;
-            }
-
-            // Add to label download list
-            LinkedList<DownloadInfo> list = getInfoListForLabel(info.label);
-            if (null == list) {
-                // Can't find the label in label list
-                list = new LinkedList<>();
-                mMap.put(info.label, list);
-                if (!containLabel(info.label)) {
-                    // Add label to DB and list
-                    mLabelList.add(EhDB.addDownloadLabel(info.label));
+        for (Map.Entry<String, List<DownloadInfo>> entry : groupByLabel.entrySet()) {
+            String label = entry.getKey();
+            List<DownloadInfo> downloadInfos = entry.getValue();
+            for (DownloadInfo info : downloadInfos) {
+                if (containDownloadInfo(info.gid)) {
+                    // Contain
+                    return;
                 }
+
+                // Ensure download state
+                if (DownloadInfo.STATE_WAIT == info.state ||
+                        DownloadInfo.STATE_DOWNLOAD == info.state) {
+                    info.state = DownloadInfo.STATE_NONE;
+                }
+
+                // Add to label download list
+                LinkedList<DownloadInfo> list = getInfoListForLabel(label);
+                if (null == list) {
+                    // Can't find the label in label list
+                    list = new LinkedList<>();
+                    mMap.put(label, list);
+                    if (!containLabel(label)) {
+                        // Add label to DB and list
+                        mLabelList.add(EhDB.addDownloadLabel(label));
+                    }
+                }
+                info.position = maxPosition(list) + 1;
+                list.add(info);
+
+                // Add to all download list and map
+                mAllInfoList.add(info);
+                mAllInfoMap.put(info.gid, info);
+
+                // Save to
+                EhDB.putDownloadInfo(info);
             }
-            list.add(info);
             // Sort
-            Collections.sort(list, DATE_DESC_COMPARATOR);
-
-            // Add to all download list and map
-            mAllInfoList.add(info);
-            mAllInfoMap.put(info.gid, info);
-
-            // Save to
-            EhDB.putDownloadInfo(info);
+            Collections.sort(getInfoListForLabel(label), DATE_DESC_COMPARATOR);
         }
 
         // Sort all download list
         Collections.sort(mAllInfoList, DATE_DESC_COMPARATOR);
 
         // Notify
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onReload();
         }
     }
 
+    private static int maxPosition(Collection<DownloadInfo> list) {
+        int max = -1;
+        for (DownloadInfo downloadInfo : list) {
+            max = Math.max(max, downloadInfo.position);
+        }
+        return max;
+    }
+
     public void addDownloadLabel(List<DownloadLabel> downloadLabelList) {
-        for (DownloadLabel label: downloadLabelList) {
+        for (DownloadLabel label : downloadLabelList) {
             String labelString = label.getLabel();
             if (!containLabel(labelString)) {
                 mMap.put(labelString, new LinkedList<DownloadInfo>());
@@ -427,6 +446,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         info.label = label;
         info.state = DownloadInfo.STATE_NONE;
         info.time = System.currentTimeMillis();
+        info.position = maxPosition(label == null ? getDefaultDownloadInfoList() : getLabelDownloadInfoList(label)) + 1;
 
         // Add to label download list
         LinkedList<DownloadInfo> list = getInfoListForLabel(info.label);
@@ -444,7 +464,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         EhDB.putDownloadInfo(info);
 
         // Notify
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onAdd(info, list, list.size() - 1);
         }
     }
@@ -456,7 +476,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             // Update listener
             List<DownloadInfo> list = getInfoListForLabel(info.label);
             if (list != null) {
-                for (DownloadInfoListener l: mDownloadInfoListeners) {
+                for (DownloadInfoListener l : mDownloadInfoListeners) {
                     l.onUpdate(info, list);
                 }
             }
@@ -471,7 +491,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             // Update listener
             List<DownloadInfo> list = getInfoListForLabel(info.label);
             if (list != null) {
-                for (DownloadInfoListener l: mDownloadInfoListeners) {
+                for (DownloadInfoListener l : mDownloadInfoListeners) {
                     l.onUpdate(info, list);
                 }
             }
@@ -484,7 +504,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         stopRangeDownloadInternal(gidList);
 
         // Update listener
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onUpdateAll();
         }
 
@@ -505,7 +525,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         stopCurrentDownloadInternal();
 
         // Notify mDownloadInfoListener
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onUpdateAll();
         }
     }
@@ -528,7 +548,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                 if (index >= 0) {
                     list.remove(info);
                     // Update listener
-                    for (DownloadInfoListener l: mDownloadInfoListeners) {
+                    for (DownloadInfoListener l : mDownloadInfoListeners) {
                         l.onRemove(info, list, index);
                     }
                 }
@@ -565,7 +585,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
 
         // Update listener
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onReload();
         }
 
@@ -626,7 +646,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             return stopCurrentDownloadInternal();
         }
 
-        for (Iterator<DownloadInfo> iterator = mWaitList.iterator(); iterator.hasNext();) {
+        for (Iterator<DownloadInfo> iterator = mWaitList.iterator(); iterator.hasNext(); ) {
             DownloadInfo info = iterator.next();
             if (info.gid == gid) {
                 // Remove from wait list
@@ -686,7 +706,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             }
 
             // Check all in wait list
-            for (Iterator<DownloadInfo> iterator = mWaitList.iterator(); iterator.hasNext();) {
+            for (Iterator<DownloadInfo> iterator = mWaitList.iterator(); iterator.hasNext(); ) {
                 DownloadInfo info = iterator.next();
                 if (gidList.contains(info.gid)) {
                     // Remove from wait list
@@ -701,41 +721,46 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
     }
 
     /**
-     * @param label Not allow new label
+     * @param dstLabel Not allow new label
      */
-    public void changeLabel(List<DownloadInfo> list, String label) {
-        if (null != label && !containLabel(label)) {
-            Log.e(TAG, "Not exits label: " + label);
+    public void changeLabel(List<DownloadInfo> list, String dstLabel) {
+        if (null != dstLabel && !containLabel(dstLabel)) {
+            Log.e(TAG, "Not exits label: " + dstLabel);
             return;
         }
 
-        List<DownloadInfo> dstList = getInfoListForLabel(label);
+        List<DownloadInfo> dstList = getInfoListForLabel(dstLabel);
         if (dstList == null) {
-            Log.e(TAG, "Can't find label with label: " + label);
+            Log.e(TAG, "Can't find label with label: " + dstLabel);
             return;
         }
 
-        for (DownloadInfo info: list) {
-            if (ObjectUtils.equal(info.label, label)) {
+        Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(list);
+        for (Map.Entry<String, List<DownloadInfo>> entry : groupByLabel.entrySet()) {
+            String srcLabel = entry.getKey();
+            List<DownloadInfo> downloadInfos = entry.getValue();
+
+            if (ObjectUtils.equal(srcLabel, dstLabel)) {
                 continue;
             }
-
-            List<DownloadInfo> srcList = getInfoListForLabel(info.label);
+            List<DownloadInfo> srcList = getInfoListForLabel(srcLabel);
             if (srcList == null) {
-                Log.e(TAG, "Can't find label with label: " + info.label);
+                Log.e(TAG, "Can't find label with label: " + srcLabel);
                 continue;
             }
-
-            srcList.remove(info);
-            dstList.add(info);
-            info.label = label;
-            Collections.sort(dstList, DATE_DESC_COMPARATOR);
-
-            // Save to DB
-            EhDB.putDownloadInfo(info);
+            for (DownloadInfo info : downloadInfos) {
+                srcList.remove(info);
+                dstList.add(info);
+                info.label = dstLabel;
+                info.position = maxPosition(dstList) + 1;
+                // Save to DB
+                EhDB.putDownloadInfo(info);
+            }
+            EhDB.updateLabelPosition(srcLabel);
         }
+        Collections.sort(dstList, DATE_DESC_COMPARATOR);
 
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onReload();
         }
     }
@@ -748,7 +773,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         mLabelList.add(EhDB.addDownloadLabel(label));
         mMap.put(label, new LinkedList<DownloadInfo>());
 
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onUpdateLabels();
         }
     }
@@ -758,7 +783,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         mLabelList.add(toPosition, item);
         EhDB.moveDownloadLabel(fromPosition, toPosition);
 
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onUpdateLabels();
         }
     }
@@ -766,7 +791,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
     public void renameLabel(@NonNull String from, @NonNull String to) {
         // Find in label list
         boolean found = false;
-        for (DownloadLabel raw: mLabelList) {
+        for (DownloadLabel raw : mLabelList) {
             if (from.equals(raw.getLabel())) {
                 found = true;
                 raw.setLabel(to);
@@ -785,7 +810,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
 
         // Update info label
-        for (DownloadInfo info: list) {
+        for (DownloadInfo info : list) {
             info.label = to;
             // Update in DB
             EhDB.putDownloadInfo(info);
@@ -794,7 +819,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         mMap.put(to, list);
 
         // Notify listener
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onRenameLabel(from, to);
         }
     }
@@ -802,7 +827,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
     public void deleteLabel(@NonNull String label) {
         // Find in label list and remove
         boolean found = false;
-        for (Iterator<DownloadLabel> iterator = mLabelList.iterator(); iterator.hasNext();) {
+        for (Iterator<DownloadLabel> iterator = mLabelList.iterator(); iterator.hasNext(); ) {
             DownloadLabel raw = iterator.next();
             if (label.equals(raw.getLabel())) {
                 found = true;
@@ -821,8 +846,9 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
 
         // Update info label
-        for (DownloadInfo info: list) {
+        for (DownloadInfo info : list) {
             info.label = null;
+            info.position = maxPosition(mDefaultInfoList) + 1;
             // Update in DB
             EhDB.putDownloadInfo(info);
             mDefaultInfoList.add(info);
@@ -832,7 +858,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         Collections.sort(mDefaultInfoList, DATE_DESC_COMPARATOR);
 
         // Notify listener
-        for (DownloadInfoListener l: mDownloadInfoListeners) {
+        for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onChange();
         }
     }
@@ -985,7 +1011,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                         info.total = mPages;
                         List<DownloadInfo> list = getInfoListForLabel(info.label);
                         if (list != null) {
-                            for (DownloadInfoListener l: mDownloadInfoListeners) {
+                            for (DownloadInfoListener l : mDownloadInfoListeners) {
                                 l.onUpdate(info, list);
                             }
                         }
@@ -1016,7 +1042,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                         }
                         List<DownloadInfo> list = getInfoListForLabel(info.label);
                         if (list != null) {
-                            for (DownloadInfoListener l: mDownloadInfoListeners) {
+                            for (DownloadInfoListener l : mDownloadInfoListeners) {
                                 l.onUpdate(info, list);
                             }
                         }
@@ -1034,7 +1060,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                         info.total = mTotal;
                         List<DownloadInfo> list = getInfoListForLabel(info.label);
                         if (list != null) {
-                            for (DownloadInfoListener l: mDownloadInfoListeners) {
+                            for (DownloadInfoListener l : mDownloadInfoListeners) {
                                 l.onUpdate(info, list);
                             }
                         }
@@ -1078,7 +1104,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                     }
                     List<DownloadInfo> list = getInfoListForLabel(info.label);
                     if (list != null) {
-                        for (DownloadInfoListener l: mDownloadInfoListeners) {
+                        for (DownloadInfoListener l : mDownloadInfoListeners) {
                             l.onUpdate(info, list);
                         }
                     }
@@ -1174,7 +1200,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                 }
                 List<DownloadInfo> list = getInfoListForLabel(info.label);
                 if (list != null) {
-                    for (DownloadInfoListener l: mDownloadInfoListeners) {
+                    for (DownloadInfoListener l : mDownloadInfoListeners) {
                         l.onUpdate(info, list);
                     }
                 }
@@ -1191,7 +1217,19 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
     private static final Comparator<DownloadInfo> DATE_DESC_COMPARATOR = new Comparator<DownloadInfo>() {
         @Override
         public int compare(DownloadInfo lhs, DownloadInfo rhs) {
-            return lhs.time - rhs.time > 0 ? -1 : 1;
+            if (lhs.label == null && rhs.label == null || (lhs.label != null && lhs.label.equals(rhs.label))) {
+                // label相同，比较position
+                return -Integer.compare(lhs.position, rhs.position);
+            } else {
+                // label不同，比较label
+                if (lhs.label == null) {
+                    return -1;
+                } else if (rhs.label == null) {
+                    return 1;
+                } else {
+                    return -lhs.label.compareTo(rhs.label);
+                }
+            }
         }
     };
 

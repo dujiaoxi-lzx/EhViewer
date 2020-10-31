@@ -415,7 +415,7 @@ public class EhDB {
 
     public static synchronized List<DownloadInfo> getAllDownloadInfo() {
         DownloadsDao dao = sDaoSession.getDownloadsDao();
-        List<DownloadInfo> list = dao.queryBuilder().orderDesc(DownloadsDao.Properties.Time).list();
+        List<DownloadInfo> list = dao.queryBuilder().orderDesc(DownloadsDao.Properties.Position).list();
         // Fix state
         for (DownloadInfo info: list) {
             if (info.state == DownloadInfo.STATE_WAIT || info.state == DownloadInfo.STATE_DOWNLOAD) {
@@ -438,7 +438,12 @@ public class EhDB {
     }
 
     public static synchronized void removeDownloadInfo(long gid) {
-        sDaoSession.getDownloadsDao().deleteByKey(gid);
+        DownloadsDao downloadsDao = sDaoSession.getDownloadsDao();
+        DownloadInfo downloadInfo = downloadsDao.load(gid);
+        if (downloadInfo != null) {
+            EhDB.updateLabelPosition(downloadInfo.label);
+        }
+        downloadsDao.deleteByKey(gid);
     }
 
     @Nullable
