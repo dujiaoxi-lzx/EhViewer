@@ -26,6 +26,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.NinePatchDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -56,6 +57,10 @@ import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.PointTarget;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.h6ah4i.android.widget.advrecyclerview.draggable.DraggableItemAdapter;
+import com.h6ah4i.android.widget.advrecyclerview.draggable.ItemDraggableRange;
+import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropManager;
+import com.h6ah4i.android.widget.advrecyclerview.utils.AbstractDraggableItemViewHolder;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.app.CheckBoxDialogBuilder;
 import com.hippo.app.RadioGroupDialogBuilder;
@@ -140,7 +145,7 @@ public class DownloadsScene extends ToolbarScene
     @Nullable
     private FabLayout mFabLayout;
     @Nullable
-    private DownloadAdapter mAdapter;
+    private RecyclerView.Adapter mAdapter;
     @Nullable
     private AutoStaggeredGridLayoutManager mLayoutManager;
 
@@ -295,8 +300,16 @@ public class DownloadsScene extends ToolbarScene
         drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
         tip.setCompoundDrawables(null, drawable, null, null);
 
-        mAdapter = new DownloadAdapter();
-        mAdapter.setHasStableIds(true);
+        // drag & drop manager
+        RecyclerViewDragDropManager dragDropManager = new RecyclerViewDragDropManager();
+        dragDropManager.setDraggingItemShadowDrawable(
+                (NinePatchDrawable) context.getResources().getDrawable(R.drawable.shadow_8dp));
+
+        RecyclerView.Adapter adapter = new DownloadAdapter();
+        adapter.setHasStableIds(true);
+        adapter = dragDropManager.createWrappedAdapter(adapter); // wrap for dragging
+
+        mAdapter = adapter;
         mRecyclerView.setAdapter(mAdapter);
         mLayoutManager = new AutoStaggeredGridLayoutManager(0, StaggeredGridLayoutManager.VERTICAL);
         mLayoutManager.setColumnSize(resources.getDimensionPixelOffset(Settings.getDetailSizeResId()));
@@ -336,6 +349,8 @@ public class DownloadsScene extends ToolbarScene
         mFabLayout.setAutoCancel(false);
         mFabLayout.setOnClickFabListener(this);
         addAboveSnackView(mFabLayout);
+
+        dragDropManager.attachRecyclerView(mRecyclerView);
 
         updateView();
 
@@ -1048,7 +1063,7 @@ public class DownloadsScene extends ToolbarScene
         }
     }
 
-    private class DownloadHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+    private class DownloadHolder extends AbstractDraggableItemViewHolder implements View.OnClickListener {
 
         public final LoadImageView thumb;
         public final TextView title;
@@ -1061,6 +1076,7 @@ public class DownloadsScene extends ToolbarScene
         public final ProgressBar progressBar;
         public final TextView percent;
         public final TextView speed;
+        public final View dragHandler;
 
         public DownloadHolder(View itemView) {
             super(itemView);
@@ -1076,6 +1092,7 @@ public class DownloadsScene extends ToolbarScene
             progressBar = (ProgressBar) itemView.findViewById(R.id.progress_bar);
             percent = (TextView) itemView.findViewById(R.id.percent);
             speed = (TextView) itemView.findViewById(R.id.speed);
+            dragHandler = itemView.findViewById(R.id.drag_handler);
 
             // TODO cancel on click listener when select items
             thumb.setOnClickListener(this);
@@ -1125,7 +1142,7 @@ public class DownloadsScene extends ToolbarScene
         }
     }
 
-    private class DownloadAdapter extends RecyclerView.Adapter<DownloadHolder> {
+    private class DownloadAdapter extends RecyclerView.Adapter<DownloadHolder> implements DraggableItemAdapter<DownloadHolder> {
 
         private final LayoutInflater mInflater;
         private final int mListThumbWidth;
@@ -1174,7 +1191,7 @@ public class DownloadsScene extends ToolbarScene
             holder.rating.setRating(info.rating);
             TextView category = holder.category;
             String newCategoryText = EhUtils.getCategory(info.category);
-            if (!newCategoryText.equals(category.getText())) {
+            if (!newCategoryText.contentEquals(category.getText())) {
                 category.setText(newCategoryText);
                 category.setBackgroundColor(EhUtils.getCategoryColor(info.category));
             }
@@ -1189,6 +1206,43 @@ public class DownloadsScene extends ToolbarScene
         @Override
         public int getItemCount() {
             return mList == null ? 0 : mList.size();
+        }
+
+        @Override
+        public boolean onCheckCanStartDrag(@NonNull DownloadHolder holder, int position, int x, int y) {
+            return ViewUtils.isViewUnder(holder.dragHandler, x, y, 0);
+        }
+
+        @Nullable
+        @Override
+        public ItemDraggableRange onGetItemDraggableRange(@NonNull DownloadHolder holder, int position) {
+            return null;
+        }
+
+        @Override
+        public void onMoveItem(int fromPosition, int toPosition) {
+            if (fromPosition == toPosition) {
+                return;
+            }
+            DownloadInfo downloadInfo = mList.remove(fromPosition);
+            mList.add(toPosition, downloadInfo);
+            EhDB.updateLabelPosition(mLabel);
+            DownloadsScene.this.onReload();
+        }
+
+        @Override
+        public boolean onCheckCanDrop(int draggingPosition, int dropPosition) {
+            return true;
+        }
+
+        @Override
+        public void onItemDragStarted(int position) {
+
+        }
+
+        @Override
+        public void onItemDragFinished(int fromPosition, int toPosition, boolean result) {
+
         }
     }
 

@@ -57,7 +57,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class EhDB {
 
@@ -69,6 +74,26 @@ public class EhDB {
 
     private static boolean sHasOldDB;
     private static boolean sNewDB;
+
+    public static void updateLabelPosition(String label) {
+        DownloadManager downloadManager = EhApplication.getDownloadManager();
+        if (downloadManager == null) {
+            return;
+        }
+        List<DownloadInfo> downloadInfos = label == null ? downloadManager.getDefaultDownloadInfoList() :
+                downloadManager.getLabelDownloadInfoList(label);
+        if (downloadInfos == null || downloadInfos.isEmpty()) {
+            return;
+        }
+        int i = downloadInfos.size();
+        for (DownloadInfo downloadInfo : downloadInfos) {
+            i--;
+            if (downloadInfo.position != i) {
+                downloadInfo.position = i;
+                EhDB.putDownloadInfo(downloadInfo);
+            }
+        }
+    }
 
     private static class DBOpenHelper extends DaoMaster.OpenHelper {
 
@@ -759,7 +784,10 @@ public class EhDB {
             // Downloads
             DownloadManager manager = EhApplication.getDownloadManager(context);
             List<DownloadInfo> downloadInfoList = session.getDownloadsDao().queryBuilder().list();
-            manager.addDownload(downloadInfoList);
+
+            Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(downloadInfoList);
+
+            manager.mergeDownload(groupByLabel);
 
             // Download label
             List<DownloadLabel> downloadLabelList = session.getDownloadLabelDao().queryBuilder().list();
