@@ -38,6 +38,7 @@
             style="@style/CardTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_above="@+id/uploader"
             android:layout_alignParentTop="true"
             android:layout_marginLeft="8dp"
             android:layout_marginTop="4dp"
@@ -59,17 +60,17 @@
             style="@style/CardMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/title"
+            android:layout_above="@id/rating"
             android:layout_alignStart="@id/title"
-            android:layout_marginTop="2dp" />
+            android:layout_marginBottom="2dp" />
 
         <com.hippo.ehviewer.widget.SimpleRatingView
             android:id="@+id/rating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_below="@id/uploader"
+            android:layout_above="@+id/category"
             android:layout_alignStart="@id/title"
-            android:layout_marginTop="2dp" />
+            android:layout_marginBottom="2dp" />
 
         <TextView
             android:id="@+id/category"
@@ -108,17 +109,14 @@
                 android:padding="8dp"
                 app:srcCompat="@drawable/v_pause_x24" />
 
-        </FrameLayout>
+            <ImageView
+                android:id="@+id/done"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="8dp"
+                app:srcCompat="@drawable/v_check_light_x24" />
 
-        <TextView
-            android:id="@+id/state"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_above="@id/actions"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="4dp"
-            android:textColor="?attr/textColorThemeAccent" />
+        </FrameLayout>
 
         <ProgressBar
             android:id="@+id/progress_bar"

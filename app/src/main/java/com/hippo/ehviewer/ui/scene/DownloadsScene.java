@@ -44,6 +44,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -52,6 +53,7 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.PointTarget;
@@ -103,6 +105,7 @@ import com.hippo.yorozuya.IOUtils;
 import com.hippo.yorozuya.ObjectUtils;
 import com.hippo.yorozuya.ViewUtils;
 import com.hippo.yorozuya.collect.LongList;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -282,7 +285,7 @@ public class DownloadsScene extends ToolbarScene
     @Nullable
     @Override
     public View onCreateView3(LayoutInflater inflater,
-            @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+                              @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.scene_download, container, false);
 
         View content = ViewUtils.$$(view, R.id.content);
@@ -531,7 +534,7 @@ public class DownloadsScene extends ToolbarScene
 
     @Override
     public View onCreateDrawerView(LayoutInflater inflater,
-            @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+                                   @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.drawer_list, container, false);
 
         final Context context = getContext2();
@@ -590,7 +593,7 @@ public class DownloadsScene extends ToolbarScene
         final List<String> labels = new ArrayList<>(list.size() + 1);
         // Add default label name
         labels.add(getString(R.string.default_download_label_name));
-        for (DownloadLabel raw: list) {
+        for (DownloadLabel raw : list) {
             labels.add(raw.getLabel());
         }
 
@@ -893,19 +896,22 @@ public class DownloadsScene extends ToolbarScene
         holder.uploader.setVisibility(View.VISIBLE);
         holder.rating.setVisibility(View.VISIBLE);
         holder.category.setVisibility(View.VISIBLE);
-        holder.state.setVisibility(View.VISIBLE);
         holder.progressBar.setVisibility(View.GONE);
         holder.percent.setVisibility(View.GONE);
         holder.speed.setVisibility(View.GONE);
         if (info.state == DownloadInfo.STATE_WAIT || info.state == DownloadInfo.STATE_DOWNLOAD) {
             holder.start.setVisibility(View.GONE);
             holder.stop.setVisibility(View.VISIBLE);
+            holder.done.setVisibility(View.GONE);
+        } else if (info.state == DownloadInfo.STATE_FINISH) {
+            holder.start.setVisibility(View.GONE);
+            holder.stop.setVisibility(View.GONE);
+            holder.done.setVisibility(View.VISIBLE);
         } else {
             holder.start.setVisibility(View.VISIBLE);
             holder.stop.setVisibility(View.GONE);
+            holder.done.setVisibility(View.GONE);
         }
-
-        holder.state.setText(state);
     }
 
     @SuppressLint("SetTextI18n")
@@ -913,16 +919,21 @@ public class DownloadsScene extends ToolbarScene
         holder.uploader.setVisibility(View.GONE);
         holder.rating.setVisibility(View.GONE);
         holder.category.setVisibility(View.GONE);
-        holder.state.setVisibility(View.GONE);
         holder.progressBar.setVisibility(View.VISIBLE);
         holder.percent.setVisibility(View.VISIBLE);
         holder.speed.setVisibility(View.VISIBLE);
         if (info.state == DownloadInfo.STATE_WAIT || info.state == DownloadInfo.STATE_DOWNLOAD) {
             holder.start.setVisibility(View.GONE);
             holder.stop.setVisibility(View.VISIBLE);
+            holder.done.setVisibility(View.GONE);
+        } else if (info.state == DownloadInfo.STATE_FINISH) {
+            holder.start.setVisibility(View.GONE);
+            holder.stop.setVisibility(View.GONE);
+            holder.done.setVisibility(View.VISIBLE);
         } else {
             holder.start.setVisibility(View.VISIBLE);
             holder.stop.setVisibility(View.GONE);
+            holder.done.setVisibility(View.GONE);
         }
 
         if (info.total <= 0 || info.finished < 0) {
@@ -945,7 +956,7 @@ public class DownloadsScene extends ToolbarScene
         new AsyncTask<UniFile, Void, Void>() {
             @Override
             protected Void doInBackground(UniFile... params) {
-                for (UniFile file: params) {
+                for (UniFile file : params) {
                     if (file != null) {
                         file.delete();
                     }
@@ -1072,7 +1083,7 @@ public class DownloadsScene extends ToolbarScene
         public final TextView category;
         public final View start;
         public final View stop;
-        public final TextView state;
+        public final View done;
         public final ProgressBar progressBar;
         public final TextView percent;
         public final TextView speed;
@@ -1088,7 +1099,7 @@ public class DownloadsScene extends ToolbarScene
             category = (TextView) itemView.findViewById(R.id.category);
             start = itemView.findViewById(R.id.start);
             stop = itemView.findViewById(R.id.stop);
-            state = (TextView) itemView.findViewById(R.id.state);
+            done = itemView.findViewById(R.id.done);
             progressBar = (ProgressBar) itemView.findViewById(R.id.progress_bar);
             percent = (TextView) itemView.findViewById(R.id.percent);
             speed = (TextView) itemView.findViewById(R.id.speed);
@@ -1098,10 +1109,12 @@ public class DownloadsScene extends ToolbarScene
             thumb.setOnClickListener(this);
             start.setOnClickListener(this);
             stop.setOnClickListener(this);
+            done.setOnClickListener(this);
 
             boolean isDarkTheme = !AttrResources.getAttrBoolean(getContext2(), R.attr.isLightTheme);
             Ripple.addRipple(start, isDarkTheme);
             Ripple.addRipple(stop, isDarkTheme);
+            Ripple.addRipple(done, isDarkTheme);
         }
 
         @Override
@@ -1129,7 +1142,7 @@ public class DownloadsScene extends ToolbarScene
                 Announcer announcer = new Announcer(GalleryDetailScene.class).setArgs(args);
                 announcer.setTranHelper(new EnterGalleryDetailTransaction(thumb));
                 startScene(announcer);
-            } else if (start == v) {
+            } else if (start == v || done == v) {
                 Intent intent = new Intent(activity, DownloadService.class);
                 intent.setAction(DownloadService.ACTION_START);
                 intent.putExtra(DownloadService.KEY_GALLERY_INFO, list.get(index));
@@ -1246,7 +1259,7 @@ public class DownloadsScene extends ToolbarScene
         }
     }
 
-    private class DownloadChoiceListener implements  EasyRecyclerView.CustomChoiceListener {
+    private class DownloadChoiceListener implements EasyRecyclerView.CustomChoiceListener {
 
         @Override
         public void onIntoCustomChoice(EasyRecyclerView view) {
