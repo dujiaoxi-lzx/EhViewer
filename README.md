@@ -12,9 +12,9 @@ An E-Hentai Application for Android.
 
 # Download
 
-[下载](https://github.com/dujiaoxi-lzx/EhViewer/releases)
+[下载](https://github.com/dujiaoxi404/EhViewer/releases)
 
-[Download](https://github.com/dujiaoxi-lzx/EhViewer/releases)
+[Download](https://github.com/dujiaoxi404/EhViewer/releases)
 
 
 # Thanks
