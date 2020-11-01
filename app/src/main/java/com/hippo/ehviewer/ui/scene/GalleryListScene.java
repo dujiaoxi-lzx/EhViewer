@@ -128,6 +128,7 @@ public final class GalleryListScene extends BaseScene
     public final static String ACTION_HOMEPAGE = "action_homepage";
     public final static String ACTION_SUBSCRIPTION = "action_subscription";
     public final static String ACTION_WHATS_HOT = "action_whats_hot";
+    public final static String ACTION_DOWNLOADS = "action_downloads";
     public final static String ACTION_LIST_URL_BUILDER = "action_list_url_builder";
 
     public final static String KEY_LIST_URL_BUILDER = "list_url_builder";
@@ -251,6 +252,9 @@ public final class GalleryListScene extends BaseScene
         } else if (ACTION_WHATS_HOT.equals(action)) {
             mUrlBuilder.reset();
             mUrlBuilder.setMode(ListUrlBuilder.MODE_WHATS_HOT);
+        } else if (ACTION_DOWNLOADS.equals(action)) {
+            mUrlBuilder.reset();
+            startScene(new Announcer(DownloadsScene.class));
         } else if (ACTION_LIST_URL_BUILDER.equals(action)) {
             ListUrlBuilder builder = args.getParcelable(KEY_LIST_URL_BUILDER);
             if (builder != null) {
