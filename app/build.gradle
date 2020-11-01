@@ -6,14 +6,14 @@ if (file('google-services.json').exists()) {
 }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 
     defaultConfig {
-        applicationId "com.hippo.ehviewer"
-        minSdkVersion 14
-        targetSdkVersion 28
-        versionCode 104
-        versionName "1.7.3"
+        applicationId "com.dujiaoxi404.ehviewer"
+        minSdkVersion 19
+        targetSdkVersion 30
+        versionCode 106
+        versionName "1.7.5"
         vectorDrawables.useSupportLibrary = true
         resConfigs "zh", "zh-rCN", "zh-rHK", "zh-rTW",
                 "es", "ja", "ko", "fr", "de", "th"
@@ -51,6 +51,8 @@ android {
             java.srcDirs += 'src/main/java-gen'
         }
     }
+    buildToolsVersion '30.0.2'
+    ndkVersion '21.3.6528147'
 }
 
 task copyNotice(type: Copy) {
