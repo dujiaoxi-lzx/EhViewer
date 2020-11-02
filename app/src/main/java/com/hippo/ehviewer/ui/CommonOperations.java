@@ -64,7 +64,7 @@ public final class CommonOperations {
     public static void checkUpdate(Activity activity, boolean feedback) {
         if (!UPDATING) {
             UPDATING = true;
-            new UpdateTask(activity, feedback).executeOnExecutor(IoThreadPoolExecutor.getInstance());
+            // new UpdateTask(activity, feedback).executeOnExecutor(IoThreadPoolExecutor.getInstance());
         }
     }
 

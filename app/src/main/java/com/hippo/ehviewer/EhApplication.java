@@ -144,32 +144,26 @@ public class EhApplication extends RecordingApplication {
             Analytics.start(this);
         }
 
-        // Do io tasks in new thread
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                // Check no media file
-                try {
-                    UniFile downloadLocation = Settings.getDownloadLocation();
-                    if (Settings.getMediaScan()) {
-                        CommonOperations.removeNoMediaFile(downloadLocation);
-                    } else {
-                        CommonOperations.ensureNoMediaFile(downloadLocation);
-                    }
-                } catch (Throwable t) {
-                    ExceptionUtils.throwIfFatal(t);
+        IoThreadPoolExecutor.getInstance().execute(() -> {
+            // Check no media file
+            try {
+                UniFile downloadLocation = Settings.getDownloadLocation();
+                if (Settings.getMediaScan()) {
+                    CommonOperations.removeNoMediaFile(downloadLocation);
+                } else {
+                    CommonOperations.ensureNoMediaFile(downloadLocation);
                 }
-
-                // Clear temp files
-                try {
-                    clearTempDir();
-                } catch (Throwable t) {
-                    ExceptionUtils.throwIfFatal(t);
-                }
-
-                return null;
+            } catch (Throwable t) {
+                ExceptionUtils.throwIfFatal(t);
             }
-        }.executeOnExecutor(IoThreadPoolExecutor.getInstance());
+
+            // Clear temp files
+            try {
+                clearTempDir();
+            } catch (Throwable t) {
+                ExceptionUtils.throwIfFatal(t);
+            }
+        });
 
         // Check app update
         update();
