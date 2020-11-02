@@ -1214,21 +1214,18 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
     }
 
-    private static final Comparator<DownloadInfo> DATE_DESC_COMPARATOR = new Comparator<DownloadInfo>() {
-        @Override
-        public int compare(DownloadInfo lhs, DownloadInfo rhs) {
-            if (lhs.label == null && rhs.label == null || (lhs.label != null && lhs.label.equals(rhs.label))) {
-                // label相同，比较position
-                return -Integer.compare(lhs.position, rhs.position);
+    public static final Comparator<DownloadInfo> DATE_DESC_COMPARATOR = (lhs, rhs) -> {
+        if (lhs.label == null && rhs.label == null || (lhs.label != null && lhs.label.equals(rhs.label))) {
+            // label相同，比较position
+            return -Integer.compare(lhs.position, rhs.position);
+        } else {
+            // label不同，比较label
+            if (lhs.label == null) {
+                return -1;
+            } else if (rhs.label == null) {
+                return 1;
             } else {
-                // label不同，比较label
-                if (lhs.label == null) {
-                    return -1;
-                } else if (rhs.label == null) {
-                    return 1;
-                } else {
-                    return -lhs.label.compareTo(rhs.label);
-                }
+                return -lhs.label.compareTo(rhs.label);
             }
         }
     };

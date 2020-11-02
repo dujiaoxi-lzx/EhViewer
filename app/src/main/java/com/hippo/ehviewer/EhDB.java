@@ -151,7 +151,7 @@ public class EhDB {
                 DaoSession session = daoMaster.newSession();
                 DownloadsDao downloadsDao = session.getDownloadsDao();
                 List<DownloadInfo> downloadInfos = downloadsDao.loadAll();
-                Map<String, List<DownloadInfo>> groupByLabel = groupByLabel(downloadInfos);
+                Map<String, List<DownloadInfo>> groupByLabel = groupByLabel(downloadInfos, (l, r) -> Long.compare(l.time, r.time));
                 for (Map.Entry<String, List<DownloadInfo>> entry : groupByLabel.entrySet()) {
                     int position = 0;
                     for (DownloadInfo downloadInfo : entry.getValue()) {
@@ -163,6 +163,10 @@ public class EhDB {
     }
 
     public static Map<String, List<DownloadInfo>> groupByLabel(List<DownloadInfo> downloadInfos) {
+        return groupByLabel(downloadInfos, DownloadManager.DATE_DESC_COMPARATOR);
+    }
+
+    public static Map<String, List<DownloadInfo>> groupByLabel(List<DownloadInfo> downloadInfos, Comparator<DownloadInfo> comparator) {
         Map<String, List<DownloadInfo>> result = new HashMap<>();
         for (DownloadInfo downloadInfo : downloadInfos) {
             List<DownloadInfo> list = result.get(downloadInfo.label);
@@ -173,7 +177,7 @@ public class EhDB {
             list.add(downloadInfo);
         }
         for (Map.Entry<String, List<DownloadInfo>> entry : result.entrySet()) {
-            Collections.sort(entry.getValue(), (l, r) -> Long.compare(l.time, r.time));
+            Collections.sort(entry.getValue(), comparator);
         }
         return result;
     }
