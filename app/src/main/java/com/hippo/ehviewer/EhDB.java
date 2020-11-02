@@ -162,10 +162,6 @@ public class EhDB {
         }
     }
 
-    public static Map<String, List<DownloadInfo>> groupByLabel(List<DownloadInfo> downloadInfos) {
-        return groupByLabel(downloadInfos, DownloadManager.DATE_DESC_COMPARATOR);
-    }
-
     public static Map<String, List<DownloadInfo>> groupByLabel(List<DownloadInfo> downloadInfos, Comparator<DownloadInfo> comparator) {
         Map<String, List<DownloadInfo>> result = new HashMap<>();
         for (DownloadInfo downloadInfo : downloadInfos) {
@@ -794,7 +790,7 @@ public class EhDB {
             DownloadManager manager = EhApplication.getDownloadManager(context);
             List<DownloadInfo> downloadInfoList = session.getDownloadsDao().queryBuilder().list();
 
-            Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(downloadInfoList);
+            Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(downloadInfoList, DownloadManager.POSITION_DESC_COMPARATOR);
 
             manager.mergeDownload(groupByLabel);
 

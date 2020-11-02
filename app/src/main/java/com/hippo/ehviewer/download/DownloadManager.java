@@ -405,11 +405,11 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                 EhDB.putDownloadInfo(info);
             }
             // Sort
-            Collections.sort(getInfoListForLabel(label), DATE_DESC_COMPARATOR);
+            Collections.sort(getInfoListForLabel(label), POSITION_DESC_COMPARATOR);
         }
 
         // Sort all download list
-        Collections.sort(mAllInfoList, DATE_DESC_COMPARATOR);
+        Collections.sort(mAllInfoList, POSITION_DESC_COMPARATOR);
 
         // Notify
         for (DownloadInfoListener l : mDownloadInfoListeners) {
@@ -735,11 +735,9 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             return;
         }
 
-        Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(list);
+        Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(list, POSITION_COMPARATOR);
         for (Map.Entry<String, List<DownloadInfo>> entry : groupByLabel.entrySet()) {
             String srcLabel = entry.getKey();
-            List<DownloadInfo> downloadInfos = entry.getValue();
-
             if (ObjectUtils.equal(srcLabel, dstLabel)) {
                 continue;
             }
@@ -748,6 +746,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
                 Log.e(TAG, "Can't find label with label: " + srcLabel);
                 continue;
             }
+            List<DownloadInfo> downloadInfos = entry.getValue();
             for (DownloadInfo info : downloadInfos) {
                 srcList.remove(info);
                 dstList.add(info);
@@ -758,7 +757,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
             }
             EhDB.updateLabelPosition(srcLabel);
         }
-        Collections.sort(dstList, DATE_DESC_COMPARATOR);
+        Collections.sort(dstList, POSITION_DESC_COMPARATOR);
 
         for (DownloadInfoListener l : mDownloadInfoListeners) {
             l.onReload();
@@ -855,7 +854,7 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
 
         // Sort
-        Collections.sort(mDefaultInfoList, DATE_DESC_COMPARATOR);
+        Collections.sort(mDefaultInfoList, POSITION_DESC_COMPARATOR);
 
         // Notify listener
         for (DownloadInfoListener l : mDownloadInfoListeners) {
@@ -1214,10 +1213,26 @@ public class DownloadManager implements SpiderQueen.OnSpiderListener {
         }
     }
 
-    public static final Comparator<DownloadInfo> DATE_DESC_COMPARATOR = (lhs, rhs) -> {
+    public static final Comparator<DownloadInfo> POSITION_DESC_COMPARATOR = (lhs, rhs) -> {
         if (lhs.label == null && rhs.label == null || (lhs.label != null && lhs.label.equals(rhs.label))) {
             // label相同，比较position
             return -Integer.compare(lhs.position, rhs.position);
+        } else {
+            // label不同，比较label
+            if (lhs.label == null) {
+                return -1;
+            } else if (rhs.label == null) {
+                return 1;
+            } else {
+                return -lhs.label.compareTo(rhs.label);
+            }
+        }
+    };
+
+    public static final Comparator<DownloadInfo> POSITION_COMPARATOR = (lhs, rhs) -> {
+        if (lhs.label == null && rhs.label == null || (lhs.label != null && lhs.label.equals(rhs.label))) {
+            // label相同，比较position
+            return Integer.compare(lhs.position, rhs.position);
         } else {
             // label不同，比较label
             if (lhs.label == null) {
