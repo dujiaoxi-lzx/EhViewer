@@ -237,30 +237,6 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         mConaco.load(builder);
     }
 
-    public void loadEnforce(String key, String url, DataContainer container) {
-        if (url == null || (key == null && container == null)) {
-            return;
-        }
-
-        mLoading = true;
-        mFailed = false;
-        // clearRetry();
-
-        mKey = key;
-        mUrl = url;
-        mContainer = container;
-
-        ConacoTask.Builder<ImageBitmap> builder = new ConacoTask.Builder<ImageBitmap>()
-                .setUnikery(this)
-                .setKey(key)
-                .setUrl(url)
-                .setDataContainer(container)
-                .setUseMemoryCache(false)
-                .setUseDiskCache(false)
-                .setUseNetwork(true);
-        mConaco.load(builder);
-    }
-
     public void load(Drawable drawable) {
         unload();
         onPreSetImageDrawable(drawable, true);
@@ -387,24 +363,29 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         }
     }
 
-    private void reloadThumb() {
+    private void refreshThumb() {
         if (!mLoading) {
             clearDrawable();
             if (mContainer != null) {
+                // Çå³ýÈÝÆ÷»º´æ
                 mContainer.remove();
             }
-            loadEnforce(mKey, mUrl, mContainer);
+            if (mKey != null) {
+                // Çå³ý´ÅÅÌºÍÄÚ´æ»º´æ
+                mConaco.getBeerBelly().remove(mKey);
+            }
+            load(mKey, mUrl, mContainer, true);
         }
     }
 
     @Override
     public void onClick(@NonNull View v) {
-        reloadThumb();
+        refreshThumb();
     }
 
     @Override
     public boolean onLongClick(@NonNull View v) {
-        reloadThumb();
+        refreshThumb();
         return true;
     }
 

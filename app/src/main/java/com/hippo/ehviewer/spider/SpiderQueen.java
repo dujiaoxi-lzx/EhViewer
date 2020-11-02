@@ -1403,26 +1403,25 @@ public final class SpiderQueen implements Runnable {
                 synchronized (mPTokenLock) {
                     pToken = spiderInfo.pTokenMap.get(index);
                 }
-                if (pToken == null) {
-                    mRequestPTokenQueue.add(index);
-                    // Notify Queen
-                    synchronized (mQueenLock) {
-                        mQueenLock.notify();
-                    }
-                    // Wait
-                    synchronized (mWorkerLock) {
-                        try {
-                            mWorkerLock.wait();
-                        } catch (InterruptedException e) {
-                            // Interrupted
-                            if (DEBUG_LOG) {
-                                Log.d(TAG, Thread.currentThread().getName() + " Interrupted");
-                            }
-                            break;
-                        }
-                    }
-                } else {
+                if (pToken != null) {
                     break;
+                }
+                mRequestPTokenQueue.add(index);
+                // Notify Queen
+                synchronized (mQueenLock) {
+                    mQueenLock.notify();
+                }
+                // Wait
+                synchronized (mWorkerLock) {
+                    try {
+                        mWorkerLock.wait();
+                    } catch (InterruptedException e) {
+                        // Interrupted
+                        if (DEBUG_LOG) {
+                            Log.d(TAG, Thread.currentThread().getName() + " Interrupted");
+                        }
+                        break;
+                    }
                 }
             }
 
