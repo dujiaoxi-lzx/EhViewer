@@ -86,13 +86,19 @@ public class EhDB {
             return;
         }
         int i = downloadInfos.size();
+        List<DownloadInfo> needUpdate = new LinkedList<>();
         for (DownloadInfo downloadInfo : downloadInfos) {
             i--;
             if (downloadInfo.position != i) {
                 downloadInfo.position = i;
-                EhDB.putDownloadInfo(downloadInfo);
+                needUpdate.add(downloadInfo);
             }
         }
+        if (needUpdate.isEmpty()) {
+            return;
+        }
+        DownloadsDao dao = sDaoSession.getDownloadsDao();
+        dao.updateInTx(needUpdate);
     }
 
     private static class DBOpenHelper extends DaoMaster.OpenHelper {
