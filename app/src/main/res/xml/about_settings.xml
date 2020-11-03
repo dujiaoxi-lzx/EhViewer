@@ -15,70 +15,56 @@
   ~ limitations under the License.
   -->
 
-<PreferenceScreen
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <Preference
         android:key="declaration"
-        android:title="@string/settings_about_declaration"
-        android:summary="@string/settings_about_declaration_summary"/>
+        android:summary="@string/settings_about_declaration_summary"
+        android:title="@string/settings_about_declaration" />
 
     <Preference
         android:key="author"
-        android:title="@string/settings_about_author"/>
+        android:title="@string/settings_about_author" />
 
     <com.hippo.preference.UrlPreference
-      android:key="telegram"
-      android:title="@string/settings_about_telegram"
-      app:url="https://t.me/ehviewer"/>
-
-    <com.hippo.preference.UrlPreference
-        android:key="latest_release"
-        android:title="@string/settings_about_latest_release"
-        app:url="https://github.com/seven332/EhViewer/releases/latest"/>
+        android:key="telegram"
+        android:title="@string/settings_about_telegram"
+        app:url="https://t.me/ehviewer" />
 
     <com.hippo.preference.UrlPreference
         android:key="website"
         android:title="@string/settings_about_website"
-        app:url="http://www.ehviewer.com"/>
+        app:url="http://www.ehviewer.com" />
+
+    <Preference
+        android:key="maintainer"
+        android:title="@string/settings_about_maintainer" />
+
+    <com.hippo.preference.UrlPreference
+        android:key="latest_release"
+        android:title="@string/settings_about_latest_release"
+        app:url="https://github.com/dujiaoxi404/EhViewer/releases/latest" />
 
     <com.hippo.preference.UrlPreference
         android:key="source"
         android:title="@string/settings_about_source"
-        app:url="https://github.com/seven332/EhViewer"/>
-
-    <com.hippo.preference.UrlPreference
-        android:key="changelog"
-        android:title="@string/settings_about_changelog"
-        app:url="http://www.ehviewer.com/changelog"/>
-
-    <com.hippo.preference.UrlPreference
-        android:key="help"
-        android:title="@string/settings_about_help"
-        app:url="http://www.ehviewer.com/help"/>
+        app:url="https://github.com/dujiaoxi404/EhViewer" />
 
     <com.hippo.preference.ActivityPreference
         android:key="license"
-        android:title="@string/settings_about_license"
         android:summary="@string/settings_about_license_summary"
-        app:activity="com.hippo.ehviewer.ui.LicenseActivity"/>
+        android:title="@string/settings_about_license"
+        app:activity="com.hippo.ehviewer.ui.LicenseActivity" />
 
-    <com.hippo.ehviewer.preference.VersionPreference
-        android:key="version"/>
+    <com.hippo.ehviewer.preference.VersionPreference android:key="version" />
 
     <Preference
         android:key="check_for_updates"
-        android:title="@string/settings_about_check_for_updates"/>
-
-    <com.hippo.preference.SwitchPreference
-        android:key="beta_update_channel"
-        android:title="@string/settings_about_beta_update_channel"
-        android:summary="@string/settings_about_beta_update_channel_summary"
-        android:defaultValue="@bool/beta"/>
+        android:title="@string/settings_about_check_for_updates" />
 
     <Preference
         android:key="donate"
-        android:title="@string/settings_about_donate"/>
+        android:title="@string/settings_about_donate" />
 
 </PreferenceScreen>
