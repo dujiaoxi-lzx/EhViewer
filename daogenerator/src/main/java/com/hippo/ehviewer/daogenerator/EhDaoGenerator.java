@@ -32,7 +32,7 @@ public class EhDaoGenerator {
     private static final String OUT_DIR = "../app/src/main/java-gen";
     private static final String DELETE_DIR = "../app/src/main/java-gen/com/hippo/ehviewer/dao";
 
-    private static final int VERSION = 5;
+    private static final int VERSION = 6;
 
     private static final String DOWNLOAD_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/DownloadInfo.java";
     private static final String HISTORY_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/HistoryInfo.java";
@@ -40,6 +40,7 @@ public class EhDaoGenerator {
     private static final String LOCAL_FAVORITE_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/LocalFavoriteInfo.java";
     private static final String BOOKMARK_INFO_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/BookmarkInfo.java";
     private static final String FILTER_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/Filter.java";
+    private static final String CONFIGURATION_PATH = "../app/src/main/java-gen/com/hippo/ehviewer/dao/Configuration.java";
 
     public static void generate() throws Exception {
         Utilities.deleteContents(new File(DELETE_DIR));
@@ -56,6 +57,7 @@ public class EhDaoGenerator {
         addLocalFavorites(schema);
         addBookmarks(schema);
         addFilter(schema);
+        addConfiguration(schema);
         new DaoGenerator().generateAll(schema, OUT_DIR);
 
         adjustDownloadInfo();
@@ -64,6 +66,27 @@ public class EhDaoGenerator {
         adjustLocalFavoriteInfo();
         adjustBookmarkInfo();
         adjustFilter();
+        adjustConfiguration();
+    }
+
+    private static void adjustConfiguration() throws Exception {
+        JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, new File(CONFIGURATION_PATH));
+
+        // Set all field public
+        javaClass.getField("key").setPublic();
+        javaClass.getField("value").setPublic();
+
+        FileWriter fileWriter = new FileWriter(CONFIGURATION_PATH);
+        fileWriter.write(javaClass.toString());
+        fileWriter.close();
+    }
+
+    private static void addConfiguration(Schema schema) {
+        Entity entity = schema.addEntity("Configuration");
+        entity.setTableName("CONFIGURATION");
+        entity.setClassNameDao("ConfigurationDao");
+        entity.addStringProperty("key").primaryKey().notNull();
+        entity.addStringProperty("value");
     }
 
     private static void addDownloads(Schema schema) {
