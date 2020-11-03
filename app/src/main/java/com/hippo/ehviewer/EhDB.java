@@ -833,7 +833,7 @@ public class EhDB {
             DownloadManager manager = EhApplication.getDownloadManager(context);
             List<DownloadInfo> downloadInfoList = session.getDownloadsDao().queryBuilder().list();
 
-            Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(downloadInfoList, DownloadManager.POSITION_DESC_COMPARATOR);
+            Map<String, List<DownloadInfo>> groupByLabel = EhDB.groupByLabel(downloadInfoList, DownloadManager.POSITION_COMPARATOR);
 
             manager.mergeDownload(groupByLabel);
 
