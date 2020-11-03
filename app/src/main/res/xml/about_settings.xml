@@ -39,6 +39,7 @@
 
     <Preference
         android:key="maintainer"
+        android:summary="@string/settings_about_maintainer_summary"
         android:title="@string/settings_about_maintainer" />
 
     <com.hippo.preference.UrlPreference
