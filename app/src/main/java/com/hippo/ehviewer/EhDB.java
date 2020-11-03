@@ -27,6 +27,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.hippo.ehviewer.client.EhTagDatabase;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.ListUrlBuilder;
 import com.hippo.ehviewer.dao.Configuration;
@@ -887,10 +888,15 @@ public class EhDB {
                 }
             }
 
+            boolean temp = Settings.getShowTagTranslations();
             // Configuration
             List<Configuration> configurationList = session.getConfigurationDao().queryBuilder().list();
             for (Configuration configuration : configurationList) {
                 EhDB.putConfiguration(configuration.key, configuration.value);
+            }
+            // ´ò¿ª±êÇ©·­Òë
+            if (!temp && Settings.getShowTagTranslations()) {
+                EhTagDatabase.update(context);
             }
 
             return null;
