@@ -780,6 +780,7 @@ public class EhDB {
                 if (!copyDao(sDaoSession.getLocalFavoritesDao(), exportSession.getLocalFavoritesDao())) return false;
                 if (!copyDao(sDaoSession.getBookmarksBao(), exportSession.getBookmarksBao())) return false;
                 if (!copyDao(sDaoSession.getFilterDao(), exportSession.getFilterDao())) return false;
+                if (!copyDao(sDaoSession.getConfigurationDao(), exportSession.getConfigurationDao())) return false;
             }
 
             // Copy export db to data dir
@@ -884,6 +885,12 @@ public class EhDB {
                 if (!currentFilterList.contains(filter)) {
                     addFilter(filter);
                 }
+            }
+
+            // Configuration
+            List<Configuration> configurationList = session.getConfigurationDao().queryBuilder().list();
+            for (Configuration configuration : configurationList) {
+                EhDB.putConfiguration(configuration.key, configuration.value);
             }
 
             return null;
