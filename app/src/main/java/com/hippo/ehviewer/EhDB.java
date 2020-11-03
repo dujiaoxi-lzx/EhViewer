@@ -17,14 +17,20 @@
 package com.hippo.ehviewer;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.preference.PreferenceManager;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.ListUrlBuilder;
+import com.hippo.ehviewer.dao.Configuration;
+import com.hippo.ehviewer.dao.ConfigurationDao;
 import com.hippo.ehviewer.dao.DaoMaster;
 import com.hippo.ehviewer.dao.DaoSession;
 import com.hippo.ehviewer.dao.DownloadDirname;
@@ -120,6 +126,8 @@ public class EhDB {
     }
 
     private static void upgradeDB(SQLiteDatabase db, int oldVersion) {
+        DaoMaster daoMaster = new DaoMaster(db);
+        DaoSession session = daoMaster.newSession();
         switch (oldVersion) {
             case 1: // 1 to 2, add FILTER
                 FilterDao.createTable(db, true);
@@ -153,8 +161,6 @@ public class EhDB {
                 db.execSQL("ALTER TABLE QUICK_SEARCH2 RENAME TO QUICK_SEARCH");
             case 4: // 4 to 5, 实现下载任务的拖拽，对position进行初始化
                 db.execSQL("ALTER TABLE DOWNLOADS ADD \"POSITION\" INTEGER DEFAULT 0 NOT NULL;");
-                DaoMaster daoMaster = new DaoMaster(db);
-                DaoSession session = daoMaster.newSession();
                 DownloadsDao downloadsDao = session.getDownloadsDao();
                 List<DownloadInfo> downloadInfos = downloadsDao.loadAll();
                 Map<String, List<DownloadInfo>> groupByLabel = groupByLabel(downloadInfos, (l, r) -> Long.compare(l.time, r.time));
@@ -165,6 +171,21 @@ public class EhDB {
                     }
                 }
                 downloadsDao.updateInTx(downloadInfos);
+            case 5:// 5 to 6, 将配置存放到数据库中，便于备份恢复
+                ConfigurationDao.createTable(db, true);
+                ConfigurationDao configurationDao = session.getConfigurationDao();
+                SharedPreferences sSettingsPre = PreferenceManager.getDefaultSharedPreferences(EhApplication.getInstance());
+                Map<String, ?> all = sSettingsPre.getAll();
+                for (Map.Entry<String, ?> entry : all.entrySet()) {
+                    String key = entry.getKey();
+                    Object value = entry.getValue();
+                    if (value instanceof Boolean || value instanceof Integer || value instanceof String || value == null) {
+                        sSettingsPre.edit().remove(key).apply();
+                        if (configurationDao.load(key) == null) {
+                            configurationDao.insert(new Configuration(key, value == null ? null : (value + "")));
+                        }
+                    }
+                }
         }
     }
 
