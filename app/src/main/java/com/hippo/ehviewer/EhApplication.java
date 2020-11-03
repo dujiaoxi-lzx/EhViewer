@@ -25,9 +25,9 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.AsyncTask;
 import android.os.Debug;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LruCache;
@@ -125,12 +125,12 @@ public class EhApplication extends RecordingApplication {
 
         GetText.initialize(this);
         StatusCodeException.initialize(this);
-        Settings.initialize(this);
+        EhDB.initialize(this);
+        Settings.initialize();
         ReadableTime.initialize(this);
         Html.initialize(this);
         AppConfig.initialize(this);
         SpiderDen.initialize(this);
-        EhDB.initialize(this);
         EhEngine.initialize();
         BitmapUtils.initialize(this);
         Image.initialize(this);

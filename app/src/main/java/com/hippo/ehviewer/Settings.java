@@ -16,17 +16,16 @@
 
 package com.hippo.ehviewer;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
-import android.preference.PreferenceManager;
-import android.util.Log;
+
 import androidx.annotation.DimenRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
 import com.hippo.ehviewer.client.EhConfig;
 import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.data.FavListUrlBuilder;
+import com.hippo.ehviewer.setting.DatabaseConfiguration;
 import com.hippo.ehviewer.ui.CommonOperations;
 import com.hippo.ehviewer.ui.scene.GalleryListScene;
 import com.hippo.glgallery.GalleryView;
@@ -35,7 +34,7 @@ import com.hippo.util.ExceptionUtils;
 import com.hippo.yorozuya.AssertUtils;
 import com.hippo.yorozuya.FileUtils;
 import com.hippo.yorozuya.MathUtils;
-import com.hippo.yorozuya.NumberUtils;
+
 import java.io.File;
 import java.util.Locale;
 
@@ -43,28 +42,24 @@ public class Settings {
 
     private static final String TAG = Settings.class.getSimpleName();
 
-    private static Context sContext;
-    private static SharedPreferences sSettingsPre;
     private static EhConfig sEhConfig;
+    private static DatabaseConfiguration sConfiguration;
 
-    public static void initialize(Context context) {
-        sContext = context.getApplicationContext();
-        sSettingsPre = PreferenceManager.getDefaultSharedPreferences(sContext);
+    public static void initialize() {
+        sConfiguration = DatabaseConfiguration.getInstance();
         sEhConfig = loadEhConfig();
-        fixDefaultValue(context);
+        fixDefaultValue();
     }
 
-    private static void fixDefaultValue(Context context) {
+    private static void fixDefaultValue() {
         // Enable builtin hosts if the country is CN
-        if (!sSettingsPre.contains(KEY_BUILT_IN_HOSTS)) {
-            if ("CN".equals(Locale.getDefault().getCountry())) {
-                putBuiltInHosts(true);
-            }
+        if (!sConfiguration.contains(KEY_BUILT_IN_HOSTS) && "CN".equals(Locale.getDefault().getCountry())) {
+            putBuiltInHosts(true);
         }
     }
 
     private static EhConfig loadEhConfig() {
-        EhConfig ehConfig= new EhConfig();
+        EhConfig ehConfig = new EhConfig();
         ehConfig.imageSize = getImageResolution();
         ehConfig.excludedLanguages = getExcludedLanguages();
         ehConfig.defaultCategories = getDefaultCategories();
@@ -74,81 +69,27 @@ public class Settings {
     }
 
     public static boolean getBoolean(String key, boolean defValue) {
-        try {
-            return sSettingsPre.getBoolean(key, defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
+        return sConfiguration.getBoolean(key, defValue);
     }
 
     public static void putBoolean(String key, boolean value) {
-        sSettingsPre.edit().putBoolean(key, value).apply();
+        sConfiguration.putBoolean(key, value);
     }
 
     public static int getInt(String key, int defValue) {
-        try {
-            return sSettingsPre.getInt(key, defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
+        return sConfiguration.getInt(key, defValue);
     }
 
     public static void putInt(String key, int value) {
-        sSettingsPre.edit().putInt(key, value).apply();
-    }
-
-    public static long getLong(String key, long defValue) {
-        try {
-            return sSettingsPre.getLong(key, defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
-    }
-
-    public static void putLong(String key, long value) {
-        sSettingsPre.edit().putLong(key, value).apply();
-    }
-
-    public static float getFloat(String key, float defValue) {
-        try {
-            return sSettingsPre.getFloat(key, defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
-    }
-
-    public static void putFloat(String key, float value) {
-        sSettingsPre.edit().putFloat(key, value).apply();
+        sConfiguration.putInt(key, value);
     }
 
     public static String getString(String key, String defValue) {
-        try {
-            return sSettingsPre.getString(key, defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
+        return sConfiguration.getString(key, defValue);
     }
 
     public static void putString(String key, String value) {
-        sSettingsPre.edit().putString(key, value).apply();
-    }
-
-    public static int getIntFromStr(String key, int defValue) {
-        try {
-            return NumberUtils.parseIntSafely(sSettingsPre.getString(key, Integer.toString(defValue)), defValue);
-        } catch (ClassCastException e) {
-            Log.d(TAG, "Get ClassCastException when get " + key + " value", e);
-            return defValue;
-        }
-    }
-
-    public static void putIntToStr(String key, int value) {
-        sSettingsPre.edit().putString(key, Integer.toString(value)).apply();
+        sConfiguration.putString(key, value);
     }
 
     private static final String KEY_VERSION_CODE = "version_code";
@@ -254,11 +195,11 @@ public class Settings {
     private static final int DEFAULT_THEME = THEME_LIGHT;
 
     public static int getTheme() {
-        return getIntFromStr(KEY_THEME, DEFAULT_THEME);
+        return getInt(KEY_THEME, DEFAULT_THEME);
     }
 
     public static void putTheme(int theme) {
-        putIntToStr(KEY_THEME, theme);
+        putInt(KEY_THEME, theme);
     }
 
     public static final String KEY_APPLY_NAV_BAR_THEME_COLOR = "apply_nav_bar_theme_color";
@@ -272,18 +213,18 @@ public class Settings {
     private static final int DEFAULT_GALLERY_SITE = 1;
 
     public static int getGallerySite() {
-        return getIntFromStr(KEY_GALLERY_SITE, DEFAULT_GALLERY_SITE);
+        return getInt(KEY_GALLERY_SITE, DEFAULT_GALLERY_SITE);
     }
 
     public static void putGallerySite(int value) {
-        putIntToStr(KEY_GALLERY_SITE, value);
+        putInt(KEY_GALLERY_SITE, value);
     }
 
     private static final String KEY_LAUNCH_PAGE = "launch_page";
     private static final int DEFAULT_LAUNCH_PAGE = 0;
 
     public static String getLaunchPageGalleryListSceneAction() {
-        int value = getIntFromStr(KEY_LAUNCH_PAGE, DEFAULT_LAUNCH_PAGE);
+        int value = getInt(KEY_LAUNCH_PAGE, DEFAULT_LAUNCH_PAGE);
         switch (value) {
             default:
             case 0:
@@ -301,14 +242,14 @@ public class Settings {
     private static final int DEFAULT_LIST_MODE = 0;
 
     public static int getListMode() {
-        return getIntFromStr(KEY_LIST_MODE, DEFAULT_LIST_MODE);
+        return getInt(KEY_LIST_MODE, DEFAULT_LIST_MODE);
     }
 
     public static final String KEY_DETAIL_SIZE = "detail_size";
     private static final int DEFAULT_DETAIL_SIZE = 0;
 
     public static int getDetailSize() {
-        return getIntFromStr(KEY_DETAIL_SIZE, DEFAULT_DETAIL_SIZE);
+        return getInt(KEY_DETAIL_SIZE, DEFAULT_DETAIL_SIZE);
     }
 
     @DimenRes
@@ -326,7 +267,7 @@ public class Settings {
     private static final int DEFAULT_THUMB_SIZE = 1;
 
     public static int getThumbSize() {
-        return getIntFromStr(KEY_THUMB_SIZE, DEFAULT_THUMB_SIZE);
+        return getInt(KEY_THUMB_SIZE, DEFAULT_THUMB_SIZE);
     }
 
     @DimenRes
@@ -346,7 +287,7 @@ public class Settings {
     private static final int DEFAULT_THUMB_RESOLUTION = 0;
 
     public static int getThumbResolution() {
-        return getIntFromStr(KEY_THUMB_RESOLUTION, DEFAULT_THUMB_RESOLUTION);
+        return getInt(KEY_THUMB_RESOLUTION, DEFAULT_THUMB_RESOLUTION);
     }
 
     private static final String KEY_FIX_THUMB_URL = "fix_thumb_url";
@@ -430,11 +371,11 @@ public class Settings {
     private static final int DEFAULT_SCREEN_ROTATION = 0;
 
     public static int getScreenRotation() {
-        return getIntFromStr(KEY_SCREEN_ROTATION, DEFAULT_SCREEN_ROTATION);
+        return getInt(KEY_SCREEN_ROTATION, DEFAULT_SCREEN_ROTATION);
     }
 
     public static void putScreenRotation(int value) {
-        putIntToStr(KEY_SCREEN_ROTATION, value);
+        putInt(KEY_SCREEN_ROTATION, value);
     }
 
     private static final String KEY_READING_DIRECTION = "reading_direction";
@@ -442,11 +383,11 @@ public class Settings {
 
     @GalleryView.LayoutMode
     public static int getReadingDirection() {
-        return GalleryView.sanitizeLayoutMode(getIntFromStr(KEY_READING_DIRECTION, DEFAULT_READING_DIRECTION));
+        return GalleryView.sanitizeLayoutMode(getInt(KEY_READING_DIRECTION, DEFAULT_READING_DIRECTION));
     }
 
     public static void putReadingDirection(int value) {
-        putIntToStr(KEY_READING_DIRECTION, value);
+        putInt(KEY_READING_DIRECTION, value);
     }
 
     private static final String KEY_PAGE_SCALING = "page_scaling";
@@ -454,11 +395,11 @@ public class Settings {
 
     @GalleryView.ScaleMode
     public static int getPageScaling() {
-        return GalleryView.sanitizeScaleMode(getIntFromStr(KEY_PAGE_SCALING, DEFAULT_PAGE_SCALING));
+        return GalleryView.sanitizeScaleMode(getInt(KEY_PAGE_SCALING, DEFAULT_PAGE_SCALING));
     }
 
     public static void putPageScaling(int value) {
-        putIntToStr(KEY_PAGE_SCALING, value);
+        putInt(KEY_PAGE_SCALING, value);
     }
 
     private static final String KEY_START_POSITION = "start_position";
@@ -466,11 +407,11 @@ public class Settings {
 
     @GalleryView.StartPosition
     public static int getStartPosition() {
-        return GalleryView.sanitizeStartPosition(getIntFromStr(KEY_START_POSITION, DEFAULT_START_POSITION));
+        return GalleryView.sanitizeStartPosition(getInt(KEY_START_POSITION, DEFAULT_START_POSITION));
     }
 
     public static void putStartPosition(int value) {
-        putIntToStr(KEY_START_POSITION, value);
+        putInt(KEY_START_POSITION, value);
     }
 
     private static final String KEY_KEEP_SCREEN_ON = "keep_screen_on";
@@ -581,6 +522,7 @@ public class Settings {
     public static boolean getEnabledSecurity() {
         return getBoolean(KEY_SEC_SECURITY, VALUE_SEC_SECURITY);
     }
+
     public static void putEnabledSecurity(boolean value) {
         putBoolean(KEY_READING_FULLSCREEN, value);
     }
@@ -604,7 +546,7 @@ public class Settings {
             builder.encodedPath(getString(KEY_DOWNLOAD_SAVE_PATH, null));
             builder.encodedQuery(getString(KEY_DOWNLOAD_SAVE_QUERY, null));
             builder.encodedFragment(getString(KEY_DOWNLOAD_SAVE_FRAGMENT, null));
-            dir = UniFile.fromUri(sContext, builder.build());
+            dir = UniFile.fromUri(EhApplication.getInstance(), builder.build());
         } catch (Throwable e) {
             ExceptionUtils.throwIfFatal(e);
             // Ignore
@@ -671,22 +613,22 @@ public class Settings {
     private static final int DEFAULT_MULTI_THREAD_DOWNLOAD = 3;
 
     public static int getMultiThreadDownload() {
-        return getIntFromStr(KEY_MULTI_THREAD_DOWNLOAD, DEFAULT_MULTI_THREAD_DOWNLOAD);
+        return getInt(KEY_MULTI_THREAD_DOWNLOAD, DEFAULT_MULTI_THREAD_DOWNLOAD);
     }
 
     public static void putMultiThreadDownload(int value) {
-        putIntToStr(KEY_MULTI_THREAD_DOWNLOAD, value);
+        putInt(KEY_MULTI_THREAD_DOWNLOAD, value);
     }
 
     private static final String KEY_PRELOAD_IMAGE = "preload_image";
     private static final int DEFAULT_PRELOAD_IMAGE = 5;
 
     public static int getPreloadImage() {
-        return getIntFromStr(KEY_PRELOAD_IMAGE, DEFAULT_PRELOAD_IMAGE);
+        return getInt(KEY_PRELOAD_IMAGE, DEFAULT_PRELOAD_IMAGE);
     }
 
     public static void putPreloadImage(int value) {
-        putIntToStr(KEY_PRELOAD_IMAGE, value);
+        putInt(KEY_PRELOAD_IMAGE, value);
     }
 
     public static final String KEY_IMAGE_RESOLUTION = "image_size";
@@ -755,80 +697,76 @@ public class Settings {
 
     public static String[] getFavCat() {
         String[] favCat = new String[10];
-        favCat[0] = sSettingsPre.getString(KEY_FAV_CAT_0, DEFAULT_FAV_CAT_0);
-        favCat[1] = sSettingsPre.getString(KEY_FAV_CAT_1, DEFAULT_FAV_CAT_1);
-        favCat[2] = sSettingsPre.getString(KEY_FAV_CAT_2, DEFAULT_FAV_CAT_2);
-        favCat[3] = sSettingsPre.getString(KEY_FAV_CAT_3, DEFAULT_FAV_CAT_3);
-        favCat[4] = sSettingsPre.getString(KEY_FAV_CAT_4, DEFAULT_FAV_CAT_4);
-        favCat[5] = sSettingsPre.getString(KEY_FAV_CAT_5, DEFAULT_FAV_CAT_5);
-        favCat[6] = sSettingsPre.getString(KEY_FAV_CAT_6, DEFAULT_FAV_CAT_6);
-        favCat[7] = sSettingsPre.getString(KEY_FAV_CAT_7, DEFAULT_FAV_CAT_7);
-        favCat[8] = sSettingsPre.getString(KEY_FAV_CAT_8, DEFAULT_FAV_CAT_8);
-        favCat[9] = sSettingsPre.getString(KEY_FAV_CAT_9, DEFAULT_FAV_CAT_9);
+        favCat[0] = sConfiguration.getString(KEY_FAV_CAT_0, DEFAULT_FAV_CAT_0);
+        favCat[1] = sConfiguration.getString(KEY_FAV_CAT_1, DEFAULT_FAV_CAT_1);
+        favCat[2] = sConfiguration.getString(KEY_FAV_CAT_2, DEFAULT_FAV_CAT_2);
+        favCat[3] = sConfiguration.getString(KEY_FAV_CAT_3, DEFAULT_FAV_CAT_3);
+        favCat[4] = sConfiguration.getString(KEY_FAV_CAT_4, DEFAULT_FAV_CAT_4);
+        favCat[5] = sConfiguration.getString(KEY_FAV_CAT_5, DEFAULT_FAV_CAT_5);
+        favCat[6] = sConfiguration.getString(KEY_FAV_CAT_6, DEFAULT_FAV_CAT_6);
+        favCat[7] = sConfiguration.getString(KEY_FAV_CAT_7, DEFAULT_FAV_CAT_7);
+        favCat[8] = sConfiguration.getString(KEY_FAV_CAT_8, DEFAULT_FAV_CAT_8);
+        favCat[9] = sConfiguration.getString(KEY_FAV_CAT_9, DEFAULT_FAV_CAT_9);
         return favCat;
     }
 
     public static void putFavCat(String[] value) {
         AssertUtils.assertEquals(10, value.length);
-        sSettingsPre.edit()
-                .putString(KEY_FAV_CAT_0, value[0])
-                .putString(KEY_FAV_CAT_1, value[1])
-                .putString(KEY_FAV_CAT_2, value[2])
-                .putString(KEY_FAV_CAT_3, value[3])
-                .putString(KEY_FAV_CAT_4, value[4])
-                .putString(KEY_FAV_CAT_5, value[5])
-                .putString(KEY_FAV_CAT_6, value[6])
-                .putString(KEY_FAV_CAT_7, value[7])
-                .putString(KEY_FAV_CAT_8, value[8])
-                .putString(KEY_FAV_CAT_9, value[9])
-                .apply();
+        sConfiguration.putString(KEY_FAV_CAT_0, value[0]);
+        sConfiguration.putString(KEY_FAV_CAT_1, value[1]);
+        sConfiguration.putString(KEY_FAV_CAT_2, value[2]);
+        sConfiguration.putString(KEY_FAV_CAT_3, value[3]);
+        sConfiguration.putString(KEY_FAV_CAT_4, value[4]);
+        sConfiguration.putString(KEY_FAV_CAT_5, value[5]);
+        sConfiguration.putString(KEY_FAV_CAT_6, value[6]);
+        sConfiguration.putString(KEY_FAV_CAT_7, value[7]);
+        sConfiguration.putString(KEY_FAV_CAT_8, value[8]);
+        sConfiguration.putString(KEY_FAV_CAT_9, value[9]);
     }
 
     public static int[] getFavCount() {
         int[] favCount = new int[10];
-        favCount[0] = sSettingsPre.getInt(KEY_FAV_COUNT_0, DEFAULT_FAV_COUNT);
-        favCount[1] = sSettingsPre.getInt(KEY_FAV_COUNT_1, DEFAULT_FAV_COUNT);
-        favCount[2] = sSettingsPre.getInt(KEY_FAV_COUNT_2, DEFAULT_FAV_COUNT);
-        favCount[3] = sSettingsPre.getInt(KEY_FAV_COUNT_3, DEFAULT_FAV_COUNT);
-        favCount[4] = sSettingsPre.getInt(KEY_FAV_COUNT_4, DEFAULT_FAV_COUNT);
-        favCount[5] = sSettingsPre.getInt(KEY_FAV_COUNT_5, DEFAULT_FAV_COUNT);
-        favCount[6] = sSettingsPre.getInt(KEY_FAV_COUNT_6, DEFAULT_FAV_COUNT);
-        favCount[7] = sSettingsPre.getInt(KEY_FAV_COUNT_7, DEFAULT_FAV_COUNT);
-        favCount[8] = sSettingsPre.getInt(KEY_FAV_COUNT_8, DEFAULT_FAV_COUNT);
-        favCount[9] = sSettingsPre.getInt(KEY_FAV_COUNT_9, DEFAULT_FAV_COUNT);
+        favCount[0] = sConfiguration.getInt(KEY_FAV_COUNT_0, DEFAULT_FAV_COUNT);
+        favCount[1] = sConfiguration.getInt(KEY_FAV_COUNT_1, DEFAULT_FAV_COUNT);
+        favCount[2] = sConfiguration.getInt(KEY_FAV_COUNT_2, DEFAULT_FAV_COUNT);
+        favCount[3] = sConfiguration.getInt(KEY_FAV_COUNT_3, DEFAULT_FAV_COUNT);
+        favCount[4] = sConfiguration.getInt(KEY_FAV_COUNT_4, DEFAULT_FAV_COUNT);
+        favCount[5] = sConfiguration.getInt(KEY_FAV_COUNT_5, DEFAULT_FAV_COUNT);
+        favCount[6] = sConfiguration.getInt(KEY_FAV_COUNT_6, DEFAULT_FAV_COUNT);
+        favCount[7] = sConfiguration.getInt(KEY_FAV_COUNT_7, DEFAULT_FAV_COUNT);
+        favCount[8] = sConfiguration.getInt(KEY_FAV_COUNT_8, DEFAULT_FAV_COUNT);
+        favCount[9] = sConfiguration.getInt(KEY_FAV_COUNT_9, DEFAULT_FAV_COUNT);
         return favCount;
     }
 
     public static void putFavCount(int[] count) {
         AssertUtils.assertEquals(10, count.length);
-        sSettingsPre.edit()
-                .putInt(KEY_FAV_COUNT_0, count[0])
-                .putInt(KEY_FAV_COUNT_1, count[1])
-                .putInt(KEY_FAV_COUNT_2, count[2])
-                .putInt(KEY_FAV_COUNT_3, count[3])
-                .putInt(KEY_FAV_COUNT_4, count[4])
-                .putInt(KEY_FAV_COUNT_5, count[5])
-                .putInt(KEY_FAV_COUNT_6, count[6])
-                .putInt(KEY_FAV_COUNT_7, count[7])
-                .putInt(KEY_FAV_COUNT_8, count[8])
-                .putInt(KEY_FAV_COUNT_9, count[9])
-                .apply();
+        sConfiguration.putInt(KEY_FAV_COUNT_0, count[0]);
+        sConfiguration.putInt(KEY_FAV_COUNT_1, count[1]);
+        sConfiguration.putInt(KEY_FAV_COUNT_2, count[2]);
+        sConfiguration.putInt(KEY_FAV_COUNT_3, count[3]);
+        sConfiguration.putInt(KEY_FAV_COUNT_4, count[4]);
+        sConfiguration.putInt(KEY_FAV_COUNT_5, count[5]);
+        sConfiguration.putInt(KEY_FAV_COUNT_6, count[6]);
+        sConfiguration.putInt(KEY_FAV_COUNT_7, count[7]);
+        sConfiguration.putInt(KEY_FAV_COUNT_8, count[8]);
+        sConfiguration.putInt(KEY_FAV_COUNT_9, count[9]);
     }
 
     public static int getFavLocalCount() {
-        return sSettingsPre.getInt(KEY_FAV_LOCAL, DEFAULT_FAV_COUNT);
+        return sConfiguration.getInt(KEY_FAV_LOCAL, DEFAULT_FAV_COUNT);
     }
 
     public static void putFavLocalCount(int count) {
-        sSettingsPre.edit().putInt(KEY_FAV_LOCAL, count).apply();
+        sConfiguration.putInt(KEY_FAV_LOCAL, count);
     }
 
     public static int getFavCloudCount() {
-        return sSettingsPre.getInt(KEY_FAV_CLOUD, DEFAULT_FAV_COUNT);
+        return sConfiguration.getInt(KEY_FAV_CLOUD, DEFAULT_FAV_COUNT);
     }
 
     public static void putFavCloudCount(int count) {
-        sSettingsPre.edit().putInt(KEY_FAV_CLOUD, count).apply();
+        sConfiguration.putInt(KEY_FAV_CLOUD, count);
     }
 
     private static final String KEY_RECENT_FAV_CAT = "recent_fav_cat";
@@ -889,11 +827,11 @@ public class Settings {
         boolean writeFile = false;
         String userID = getString(KEY_USER_ID, null);
         File file = AppConfig.getFileInExternalAppDir(FILENAME_USER_ID);
-        if (null == userID || !isValidUserID(userID)) {
+        if (isInvalidUserID(userID)) {
             writeXml = true;
             // Get use ID from out sd card file
             userID = FileUtils.read(file);
-            if (null == userID || !isValidUserID(userID)) {
+            if (isInvalidUserID(userID)) {
                 writeFile = true;
                 userID = generateUserID();
             }
@@ -927,19 +865,19 @@ public class Settings {
         return sb.toString();
     }
 
-    private static boolean isValidUserID(@Nullable String userID) {
+    private static boolean isInvalidUserID(@Nullable String userID) {
         if (null == userID || LENGTH_USER_ID != userID.length()) {
-            return false;
+            return true;
         }
 
         for (int i = 0; i < LENGTH_USER_ID; i++) {
             char ch = userID.charAt(i);
             if (!(ch >= '0' && ch <= '9') && !(ch >= 'a' && ch <= 'z')) {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /********************
@@ -1012,7 +950,7 @@ public class Settings {
     public static final int DEFAULT_READ_CACHE_SIZE = 160;
 
     public static int getReadCacheSize() {
-        return getIntFromStr(KEY_READ_CACHE_SIZE, DEFAULT_READ_CACHE_SIZE);
+        return getInt(KEY_READ_CACHE_SIZE, DEFAULT_READ_CACHE_SIZE);
     }
 
     public static final String KEY_BUILT_IN_HOSTS = "built_in_hosts";
