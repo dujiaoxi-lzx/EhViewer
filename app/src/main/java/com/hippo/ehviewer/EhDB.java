@@ -733,6 +733,21 @@ public class EhDB {
         sDaoSession.getFilterDao().update(filter);
     }
 
+    public static synchronized Configuration getConfiguration(String key) {
+        ConfigurationDao configurationDao = sDaoSession.getConfigurationDao();
+        return configurationDao.load(key);
+    }
+
+    public static synchronized void putConfiguration(String key, String value) {
+        ConfigurationDao configurationDao = sDaoSession.getConfigurationDao();
+        Configuration configuration = configurationDao.load(key);
+        if (configuration == null) {
+            configurationDao.insert(new Configuration(key, value));
+        } else {
+            configurationDao.update(new Configuration(key, value));
+        }
+    }
+
     private static <T> boolean copyDao(AbstractDao<T, ?> from, AbstractDao<T, ?> to) {
         try (CloseableListIterator<T> iterator = from.queryBuilder().listIterator()) {
             while (iterator.hasNext()) {
