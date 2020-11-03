@@ -26,6 +26,7 @@ import android.view.View;
 import android.widget.SeekBar;
 
 import com.hippo.ehviewer.R;
+import com.hippo.ehviewer.setting.DatabaseConfiguration;
 
 public class SeekBarPreference extends Preference implements SeekBar.OnSeekBarChangeListener {
 
@@ -68,8 +69,18 @@ public class SeekBarPreference extends Preference implements SeekBar.OnSeekBarCh
 
     @Override
     protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        setProgress(restoreValue ? getPersistedInt(mProgress)
-                : (Integer) defaultValue);
+        setProgress(getPersistedInt((Integer) defaultValue));
+    }
+
+    @Override
+    protected boolean persistInt(int value) {
+        DatabaseConfiguration.getInstance().putInt(getKey(), value);
+        return true;
+    }
+
+    @Override
+    protected int getPersistedInt(int defaultReturnValue) {
+        return DatabaseConfiguration.getInstance().getInt(getKey(), defaultReturnValue);
     }
 
     @Override

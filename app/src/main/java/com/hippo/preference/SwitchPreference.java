@@ -26,6 +26,7 @@ import android.widget.CompoundButton;
 import androidx.annotation.StringRes;
 import androidx.appcompat.widget.SwitchCompat;
 import com.hippo.ehviewer.R;
+import com.hippo.ehviewer.setting.DatabaseConfiguration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -87,6 +88,22 @@ public class SwitchPreference extends TwoStatePreference {
         setSwitchTextOff(a.getString(R.styleable.SwitchPreference_switchTextOff));
         setDisableDependentsState(a.getBoolean(R.styleable.SwitchPreference_disableDependentsState, false));
         a.recycle();
+    }
+
+    @Override
+    protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
+        setChecked(getPersistedBoolean((Boolean) defaultValue));
+    }
+
+    @Override
+    protected boolean persistBoolean(boolean value) {
+        DatabaseConfiguration.getInstance().putBoolean(getKey(), value);
+        return true;
+    }
+
+    @Override
+    protected boolean getPersistedBoolean(boolean defaultReturnValue) {
+        return DatabaseConfiguration.getInstance().getBoolean(getKey(), defaultReturnValue);
     }
 
     @SuppressWarnings("TryWithIdenticalCatches")

@@ -26,6 +26,7 @@ import android.util.AttributeSet;
 import androidx.annotation.ArrayRes;
 import androidx.appcompat.app.AlertDialog;
 import com.hippo.ehviewer.R;
+import com.hippo.ehviewer.setting.DatabaseConfiguration;
 
 public class ListPreference extends DialogPreference {
 
@@ -279,7 +280,18 @@ public class ListPreference extends DialogPreference {
 
     @Override
     protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        setValue(restoreValue ? getPersistedString(mValue) : (String) defaultValue);
+        setValue(getPersistedString((String) defaultValue));
+    }
+
+    @Override
+    protected boolean persistString(String value) {
+        DatabaseConfiguration.getInstance().putString(getKey(), value);
+        return true;
+    }
+
+    @Override
+    protected String getPersistedString(String defaultReturnValue) {
+        return DatabaseConfiguration.getInstance().getString(getKey(), defaultReturnValue);
     }
 
     @Override
